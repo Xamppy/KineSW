@@ -60,6 +60,10 @@ def ruta_archivo_medico(instance, filename):
     # El archivo se subirá a MEDIA_ROOT/archivos_medicos/jugador_<id>/<filename>
     return f'archivos_medicos/jugador_{instance.jugador.id}/{filename}'
 
+def ruta_foto_perfil_jugador(instance, filename):
+    # La foto se subirá a MEDIA_ROOT/jugadores/fotos_perfil/jugador_<id>/<filename>
+    return f'jugadores/fotos_perfil/jugador_{instance.id}/{filename}'
+
 class Division(models.Model):
     nombre = models.CharField(max_length=100, unique=True, help_text="Ej: Primer Equipo, Femenino, Cadetes Sub-17")
 
@@ -78,6 +82,7 @@ class Jugador(models.Model):
     apellidos = models.CharField(max_length=100)
     fecha_nacimiento = models.DateField()
     nacionalidad = models.CharField(max_length=50, default="Chilena")
+    foto_perfil = models.ImageField(upload_to=ruta_foto_perfil_jugador, null=True, blank=True, verbose_name="Foto de Perfil")
 
     LATERALIDAD_CHOICES = [
         ('zurdo', 'Zurdo'),

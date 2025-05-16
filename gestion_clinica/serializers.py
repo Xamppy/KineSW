@@ -7,6 +7,53 @@ import re
 
 User = get_user_model()
 
+class UserSerializer(serializers.ModelSerializer):
+    """Serializer para el modelo User con información completa"""
+    groups = serializers.StringRelatedField(many=True, read_only=True)
+    password = serializers.CharField(write_only=True, required=True)
+    rut = serializers.CharField(source='username', required=True)  # Usar username como rut
+
+    class Meta:
+        model = User
+        fields = ('id', 'rut', 'email', 'first_name', 'last_name', 'password', 'groups')
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'email': {'required': True}
+        }
+
+    def validate_rut(self, value):
+        try:
+            rut_limpio = validar_rut_chileno(value)
+            return rut_limpio
+        except ValidationError as e:
+            raise serializers.ValidationError(str(e))
+
+    def validate_password(self, value):
+        try:
+            validate_password(value)
+            return value
+        except ValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+
+    def create(self, validated_data):
+        username_data = validated_data.pop('username')  # Obtener el RUT del campo username
+        password = validated_data.pop('password')
+        
+        user = User.objects.create_user(
+            username=username_data,
+            password=password,
+            **validated_data
+        )
+        return user
+
+    def update(self, instance, validated_data):
+        if 'password' in validated_data:
+            password = validated_data.pop('password')
+            instance.set_password(password)
+        if 'username' in validated_data:
+            validated_data.pop('username')  # No permitir cambiar el RUT/username
+        return super().update(instance, validated_data)
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """Serializer para el registro de usuarios"""
     password = serializers.CharField(write_only=True, required=True)
@@ -115,10 +162,26 @@ class DivisionSerializer(serializers.ModelSerializer):
 class JugadorSerializer(serializers.ModelSerializer):
     division_nombre = serializers.CharField(source='division.nombre', read_only=True)
     edad = serializers.IntegerField(read_only=True)
+    foto_perfil_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Jugador
-        fields = '__all__'
+        fields = [
+            'id', 'rut', 'nombres', 'apellidos', 'fecha_nacimiento',
+            'nacionalidad', 'foto_perfil', 'foto_perfil_url', 'lateralidad',
+            'peso_kg', 'estatura_cm', 'prevision_salud', 'numero_ficha',
+            'division', 'division_nombre', 'activo', 'edad'
+        ]
+        extra_kwargs = {
+            'foto_perfil': {'write_only': True}  # La foto original solo para escritura
+        }
+
+    def get_foto_perfil_url(self, obj):
+        if obj.foto_perfil:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.foto_perfil.url)
+        return None
 
 class AtencionKinesicaSerializer(serializers.ModelSerializer):
     jugador_nombre = serializers.CharField(source='jugador.__str__', read_only=True)

@@ -13,9 +13,15 @@ from .serializers import (
     DivisionSerializer, JugadorSerializer, 
     AtencionKinesicaSerializer, LesionSerializer,
     ArchivoMedicoSerializer, ChecklistPostPartidoSerializer,
-    UserRegistrationSerializer, UserLoginSerializer, UserBasicSerializer
+    UserRegistrationSerializer, UserLoginSerializer, UserBasicSerializer,
+    UserSerializer
 )
 import re
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import get_user_model
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
+User = get_user_model()
 
 # Create your views here.
 
@@ -33,13 +39,15 @@ class DivisionViewSet(viewsets.ModelViewSet):
 
 class JugadorViewSet(viewsets.ModelViewSet):
     """
-    API endpoint para ver y editar jugadores
+    API endpoint para ver y editar jugadores.
+    Soporta la subida de fotos de perfil a través de formularios multipart/form-data.
     """
     queryset = Jugador.objects.all().select_related('division').prefetch_related(
         'atenciones_kinesicas', 'lesiones', 'archivos_medicos', 'checklists_post_partido'
     ).order_by('apellidos', 'nombres')
     serializer_class = JugadorSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['division', 'activo', 'nacionalidad', 'lateralidad', 'prevision_salud']
     search_fields = ['rut', 'nombres', 'apellidos', 'numero_ficha']
@@ -61,6 +69,14 @@ class JugadorViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(activo=(activo.lower() == 'true'))
             
         return queryset
+
+    def get_serializer_context(self):
+        """
+        Añadir el request al contexto para generar URLs absolutas de las fotos
+        """
+        context = super().get_serializer_context()
+        context.update({'request': self.request})
+        return context
 
 class AtencionKinesicaViewSet(viewsets.ModelViewSet):
     """
@@ -186,32 +202,27 @@ class ChecklistPostPartidoViewSet(viewsets.ModelViewSet):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def register_user(request):
+def register_view(request):
     """
-    Vista para registrar un nuevo usuario
+    Vista para registrar un nuevo usuario y devolver tokens JWT
     """
     try:
-        print("Datos recibidos:", request.data)  # Debug
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            refresh = RefreshToken.for_user(user)
+            
             return Response({
-                'user': UserBasicSerializer(user).data,
-                'message': 'Usuario creado exitosamente'
+                'access_token': str(refresh.access_token),
+                'refresh_token': str(refresh),
+                'user': UserSerializer(user).data
             }, status=status.HTTP_201_CREATED)
         
-        # Devolver mensajes de error más detallados
-        error_messages = {}
-        for field, errors in serializer.errors.items():
-            error_messages[field] = errors[0] if isinstance(errors, list) else errors
-        
-        print("Errores de validación:", error_messages)  # Debug
         return Response({
             'error': 'Error en el registro',
-            'detail': error_messages
+            'detail': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
-        print("Error inesperado:", str(e))  # Debug
         return Response({
             'error': 'Error interno del servidor',
             'detail': str(e)
@@ -219,39 +230,38 @@ def register_user(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def login_user(request):
+def login_view(request):
     """
-    Vista para iniciar sesión
+    Vista para iniciar sesión y devolver tokens JWT
     """
     try:
-        print("Datos de login recibidos:", request.data)  # Debug
-        serializer = UserLoginSerializer(data=request.data)
-        if serializer.is_valid():
-            rut = serializer.validated_data['rut']
-            password = serializer.validated_data['password']
-            
-            # Limpiar el RUT por si acaso
-            rut_limpio = re.sub(r'[^0-9kK]', '', rut)
-            print(f"Intentando autenticar con RUT: {rut_limpio}")  # Debug
-            
-            user = authenticate(request, username=rut_limpio, password=password)
-            
-            if user is not None:
-                login(request, user)
-                return Response({
-                    'user': UserBasicSerializer(user).data,
-                    'message': 'Inicio de sesión exitoso'
-                })
-            else:
-                print("Autenticación fallida para RUT:", rut_limpio)  # Debug
-                return Response({
-                    'error': 'Credenciales inválidas'
-                }, status=status.HTTP_401_UNAUTHORIZED)
+        rut = request.data.get('rut')
+        password = request.data.get('password')
+
+        if not rut or not password:
+            return Response({
+                'error': 'Por favor, proporciona RUT y contraseña'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Limpiar el RUT
+        rut_limpio = re.sub(r'[^0-9kK]', '', rut)
         
-        print("Errores de validación:", serializer.errors)  # Debug
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Intentar autenticar usando el RUT limpio como username
+        user = authenticate(username=rut_limpio, password=password)
+
+        if user is None:
+            return Response({
+                'error': 'Credenciales inválidas'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        refresh = RefreshToken.for_user(user)
+        
+        return Response({
+            'access_token': str(refresh.access_token),
+            'refresh_token': str(refresh),
+            'user': UserSerializer(user).data
+        })
     except Exception as e:
-        print("Error inesperado en login:", str(e))  # Debug
         return Response({
             'error': 'Error interno del servidor',
             'detail': str(e)

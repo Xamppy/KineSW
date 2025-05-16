@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('gestion_clinica.urls')),  # Incluir las URLs de gestion_clinica
+    path('api/', include('gestion_clinica.urls')),  # Incluir las URLs de gestion_clinica con prefijo api/
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),  # URLs de autenticación para la API
 ]
 

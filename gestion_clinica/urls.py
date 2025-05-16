@@ -3,7 +3,11 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     DivisionViewSet, JugadorViewSet, AtencionKinesicaViewSet,
     LesionViewSet, ArchivoMedicoViewSet, ChecklistPostPartidoViewSet,
-    register_user, login_user
+    login_view, register_view
+)
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
 )
 
 # Configuración del router para la API
@@ -18,6 +22,9 @@ router.register(r'checklists', ChecklistPostPartidoViewSet)
 urlpatterns = [
     # URLs de la API
     path('', include(router.urls)),
-    path('auth/register/', register_user, name='register'),
-    path('auth/login/', login_user, name='login'),
+    # Rutas de autenticación
+    path('auth/login/', login_view, name='auth-login'),
+    path('auth/register/', register_view, name='auth-register'),
+    path('auth/token/', TokenObtainPairView.as_view(), name='token-obtain-pair'),
+    path('auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
 ] 
