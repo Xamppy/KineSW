@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+:root {
+  /* Variables de color de Santiago Wanderers */
+  --wanderers-green: #00693E;
+  --wanderers-white: #FFFFFF;
+  --wanderers-black: #000000;
+}
+
+/* Estilos base globales */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--wanderers-white);
+  color: var(--wanderers-black);
+}
+
+/* Clases de utilidad para colores de Wanderers */
+.text-wanderers {
+  --tw-text-opacity: 1;
+  color: var(--wanderers-green);
+}
+
+.bg-wanderers {
+  --tw-bg-opacity: 1;
+  background-color: var(--wanderers-green);
+}
+
+.border-wanderers {
+  --tw-border-opacity: 1;
+  border-color: var(--wanderers-green);
+}
+
+/* Variantes de hover */
+.hover\:text-wanderers:hover {
+  --tw-text-opacity: 1;
+  color: var(--wanderers-green);
+}
+
+.hover\:bg-wanderers:hover {
+  --tw-bg-opacity: 1;
+  background-color: var(--wanderers-green);
+}
+
+.hover\:border-wanderers:hover {
+  --tw-border-opacity: 1;
+  border-color: var(--wanderers-green);
+}
