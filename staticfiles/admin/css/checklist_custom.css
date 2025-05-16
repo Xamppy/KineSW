@@ -1,0 +1,117 @@
+/* Estilos para ChecklistPostPartido */
+
+/* Para los checkboxes en línea */
+.inline-checkbox {
+    display: inline-block !important;
+    margin-right: 15px !important;
+}
+
+/* Contenedor para grupos de checkboxes */
+.field-intensidad_leve, .field-intensidad_moderada, .field-intensidad_severa,
+.field-mecanismo_sobrecarga, .field-mecanismo_traumatismo, .field-mecanismo_contacto, .field-mecanismo_gesto_tecnico, .field-mecanismo_indeterminado,
+.field-momento_primer_tiempo, .field-momento_segundo_tiempo, .field-momento_calentamiento, .field-momento_post_partido {
+    display: inline-block !important;
+    margin-right: 20px !important;
+    padding: 5px !important;
+    border-radius: 4px !important;
+}
+
+/* Mejora visual para los grupos de checkboxes */
+fieldset.module h2 {
+    margin-bottom: 12px;
+    color: #417690;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+fieldset.module .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 8px 0;
+}
+
+/* Dar más espacio a las secciones */
+fieldset.module {
+    margin-bottom: 20px !important;
+    padding-bottom: 15px !important;
+    border-bottom: 1px solid #eaeaea;
+}
+
+/* Mejora de los selectores múltiples */
+.wide-multiselect {
+    min-width: 500px !important;
+    height: auto !important;
+}
+
+/* Estilos para las descripciones de los fieldsets */
+fieldset.module .description {
+    font-style: italic;
+    color: #666;
+    margin-bottom: 12px;
+    padding: 8px;
+    background-color: #f8f8f8;
+    border-left: 4px solid #417690;
+    border-radius: 0 4px 4px 0;
+}
+
+/* Destaca los checkboxes seleccionados */
+input[type="checkbox"]:checked + label {
+    font-weight: bold;
+    color: #417690;
+}
+
+/* Estilo para los fieldsets especiales */
+fieldset.module.wide.extrapretty {
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    padding: 15px;
+}
+
+/* Para dispositivos móviles */
+@media (max-width: 767px) {
+    .field-intensidad_leve, .field-intensidad_moderada, .field-intensidad_severa,
+    .field-mecanismo_sobrecarga, .field-mecanismo_traumatismo, .field-mecanismo_contacto, .field-mecanismo_gesto_tecnico, .field-mecanismo_indeterminado,
+    .field-momento_primer_tiempo, .field-momento_segundo_tiempo, .field-momento_calentamiento, .field-momento_post_partido {
+        display: block !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .wide-multiselect {
+        min-width: 100% !important;
+    }
+}
+
+/* Mejoras para las áreas de texto */
+textarea {
+    padding: 8px !important;
+    line-height: 1.4 !important;
+}
+
+/* Destacar el campo dolor_molestia que controla la visualización */
+#id_dolor_molestia {
+    transform: scale(1.2);
+    margin-right: 10px;
+}
+
+label[for="id_dolor_molestia"] {
+    font-weight: bold;
+    color: #d35400;
+}
+
+/* Mejora de la apariencia de las secciones */
+.form-row.field-jugador,
+.form-row.field-fecha_partido_evaluado,
+.form-row.field-rival,
+.form-row.field-realizado_por {
+    padding: 10px 0 !important;
+}
+
+/* Botones del formulario */
+.submit-row input[type="submit"] {
+    transition: background 0.3s ease;
+}
+
+.submit-row input[type="submit"]:hover {
+    background: #295d76 !important;
+} 
