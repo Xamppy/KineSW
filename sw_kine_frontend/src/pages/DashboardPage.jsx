@@ -3,8 +3,25 @@ import { Link } from 'react-router-dom';
 
 const DashboardPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50 relative overflow-hidden">
+      {/* Fondo con ondulación en verde institucional */}
+      <div className="absolute inset-0 z-0">
+        <svg
+          className="absolute bottom-0 left-0 w-full"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 1440 320"
+          preserveAspectRatio="none"
+          style={{ height: '40%' }}
+        >
+          <path
+            fill="#07421a"
+            d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+          ></path>
+        </svg>
+      </div>
+
+      {/* Contenido principal */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <h1 className="text-3xl font-bold text-wanderers-green mb-8">
           Dashboard Kinesiología
         </h1>
@@ -13,7 +30,7 @@ const DashboardPage = () => {
           {/* Fichas Clínicas */}
           <Link
             to="/ficha-clinica"
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200"
+            className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 p-6 border border-gray-200/50"
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-wanderers-green">Fichas Clínicas</h2>
@@ -27,7 +44,7 @@ const DashboardPage = () => {
           {/* Atenciones Kinésicas */}
           <Link
             to="/atenciones-kinesicas"
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200"
+            className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 p-6 border border-gray-200/50"
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-wanderers-green">Atenciones Kinésicas</h2>
@@ -41,7 +58,7 @@ const DashboardPage = () => {
           {/* Checklist Post-Partido */}
           <Link
             to="/checklist-post-partido/nuevo"
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200"
+            className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 p-6 border border-gray-200/50"
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-wanderers-green">Checklist Post-Partido</h2>
@@ -55,7 +72,7 @@ const DashboardPage = () => {
           {/* Divisiones */}
           <Link
             to="/divisiones"
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200"
+            className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 p-6 border border-gray-200/50"
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-wanderers-green">Divisiones</h2>

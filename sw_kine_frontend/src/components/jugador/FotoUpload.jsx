@@ -1,43 +1,24 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { useAuth } from '../../contexts/AuthContext';
+import { uploadFotoJugador } from '../../services/api';
 
-const FotoUpload = ({ jugadorId, currentFotoUrl, onUploadSuccess }) => {
-  const { isAuthenticated } = useAuth();
-  const [selectedFile, setSelectedFile] = useState(null);
+const FotoUpload = ({ jugadorId, onUploadSuccess, className = '' }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
 
-  const handleFileSelect = (event) => {
+  const handleFileChange = async (event) => {
     const file = event.target.files[0];
-    if (file) {
-      // Validar que sea una imagen
-      if (!file.type.startsWith('image/')) {
-        setError('Por favor seleccione un archivo de imagen válido.');
-        return;
-      }
-      // Validar tamaño (máximo 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('La imagen no debe superar los 5MB.');
-        return;
-      }
-      setSelectedFile(file);
-      // Crear preview de la imagen seleccionada
-      const tempUrl = URL.createObjectURL(file);
-      setPreviewUrl(tempUrl);
-      setError(null);
-    }
-  };
+    if (!file) return;
 
-  const handleUpload = async () => {
-    if (!isAuthenticated) {
-      setError('Debe iniciar sesión para subir fotos.');
+    // Validar tipo de archivo
+    if (!file.type.startsWith('image/')) {
+      setError('Por favor seleccione un archivo de imagen válido');
       return;
     }
 
-    if (!selectedFile) {
-      setError('Por favor seleccione una imagen primero.');
+    // Validar tamaño (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('La imagen no debe superar los 5MB');
       return;
     }
 
@@ -45,94 +26,88 @@ const FotoUpload = ({ jugadorId, currentFotoUrl, onUploadSuccess }) => {
       setIsUploading(true);
       setError(null);
 
+      // Crear FormData
       const formData = new FormData();
-      formData.append('foto_perfil', selectedFile);
+      formData.append('foto_perfil', file);
 
-      const { uploadFotoJugador } = await import('../../services/api');
-      const response = await uploadFotoJugador(jugadorId, formData);
+      // Subir la foto
+      await uploadFotoJugador(jugadorId, formData);
 
-      // Limpiar el estado
-      setSelectedFile(null);
-      // Mantener la URL de preview hasta que se actualice la página
-      if (onUploadSuccess) {
-        onUploadSuccess(previewUrl); // Pasar la URL temporal al componente padre
-      }
+      // Crear URL temporal para preview
+      const previewUrl = URL.createObjectURL(file);
+      onUploadSuccess(previewUrl);
+
     } catch (err) {
-      console.error('Error uploading photo:', err.response?.data || err);
-      if (err.response?.status === 401) {
-        setError('Sesión expirada. Por favor, inicie sesión nuevamente.');
-      } else if (err.response?.status === 404) {
-        setError('No se encontró el jugador. Por favor, actualice la página.');
-      } else if (err.message === 'Jugador no encontrado') {
-        setError('No se encontró el jugador en los datos simulados.');
-      } else {
-        setError(err.response?.data?.detail || 'Error al subir la imagen. Por favor intente nuevamente.');
-      }
-      // Limpiar la preview en caso de error
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-        setPreviewUrl(null);
-      }
+      console.error('Error al subir la foto:', err);
+      setError('Error al subir la foto. Por favor, intente nuevamente.');
     } finally {
       setIsUploading(false);
     }
   };
 
-  // Limpiar la URL del objeto al desmontar el componente
-  React.useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center space-x-4">
-        <label className="relative cursor-pointer">
-          <span className="inline-flex items-center px-4 py-2 rounded-md shadow-sm text-sm font-bold text-white bg-[#00693E] hover:bg-[#00693E]/90 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[#00693E]">
-            Seleccionar Imagen
-          </span>
+    <div className={className}>
+      <label className="block">
+        <span className="sr-only">Seleccionar foto de perfil</span>
+        <div
+          className={`
+            relative flex items-center justify-center
+            px-6 py-4 border-2 border-dashed rounded-lg
+            transition-colors cursor-pointer
+            ${isUploading ? 'bg-gray-50 border-gray-300' : 'hover:bg-gray-50 border-gray-300 hover:border-wanderers-green'}
+          `}
+        >
           <input
             type="file"
-            className="sr-only"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            onChange={handleFileChange}
             accept="image/*"
-            onChange={handleFileSelect}
             disabled={isUploading}
           />
-        </label>
-        {selectedFile && (
-          <span className="text-sm text-gray-600">
-            {selectedFile.name}
-          </span>
-        )}
-      </div>
-
-      {error && (
-        <div className="text-sm text-red-600">
-          {error}
+          <div className="text-center">
+            {isUploading ? (
+              <div className="flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-wanderers-green border-t-transparent rounded-full animate-spin mr-2"></div>
+                <span className="text-sm text-gray-500">Subiendo foto...</span>
+              </div>
+            ) : (
+              <>
+                <svg
+                  className="mx-auto h-8 w-8 text-gray-400"
+                  stroke="currentColor"
+                  fill="none"
+                  viewBox="0 0 48 48"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium text-wanderers-green hover:text-wanderers-green/80">
+                    Seleccionar archivo
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP hasta 5MB</p>
+                </div>
+              </>
+            )}
+          </div>
         </div>
+      </label>
+      {error && (
+        <p className="mt-2 text-sm text-red-600">{error}</p>
       )}
-
-      <button
-        className={`w-full px-4 py-2 rounded-md shadow-sm text-sm font-bold text-white 
-          ${isUploading 
-            ? 'bg-gray-400 cursor-not-allowed' 
-            : 'bg-[#00693E] hover:bg-[#00693E]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00693E]'}`}
-        onClick={handleUpload}
-        disabled={!selectedFile || isUploading}
-      >
-        {isUploading ? 'Subiendo...' : 'Subir Foto'}
-      </button>
     </div>
   );
 };
 
 FotoUpload.propTypes = {
   jugadorId: PropTypes.number.isRequired,
-  currentFotoUrl: PropTypes.string,
-  onUploadSuccess: PropTypes.func
+  onUploadSuccess: PropTypes.func.isRequired,
+  className: PropTypes.string
 };
 
 export default FotoUpload; 
