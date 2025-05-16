@@ -105,6 +105,35 @@ const MOCK_DATA = {
     { id: 1, nombre: 'Primer Equipo', descripcion: 'Equipo principal masculino' },
     { id: 2, nombre: 'Femenino', descripcion: 'Equipo principal femenino' },
     { id: 3, nombre: 'Sub-21', descripcion: 'Equipo de desarrollo sub-21' }
+  ],
+  atenciones: [
+    {
+      id: 1,
+      jugador: 1,
+      fecha_atencion: '2024-03-15',
+      motivo_consulta: 'Dolor en isquiotibiales',
+      prestaciones_realizadas: 'Masaje descontracturante, ejercicios de estiramiento',
+      estado_actual: 'Mejora notable, continuar con ejercicios',
+      observaciones: 'Recomendar ejercicios de fortalecimiento'
+    },
+    {
+      id: 2,
+      jugador: 1,
+      fecha_atencion: '2024-03-10',
+      motivo_consulta: 'Control rutinario',
+      prestaciones_realizadas: 'Evaluación general, ejercicios preventivos',
+      estado_actual: 'Óptimo para competencia',
+      observaciones: 'Mantener rutina de ejercicios'
+    },
+    {
+      id: 3,
+      jugador: 2,
+      fecha_atencion: '2024-03-14',
+      motivo_consulta: 'Molestia en rodilla derecha',
+      prestaciones_realizadas: 'Evaluación, terapia manual, ejercicios',
+      estado_actual: 'En recuperación',
+      observaciones: 'Seguimiento en próxima sesión'
+    }
   ]
 };
 
@@ -478,16 +507,42 @@ export const getChecklistPostPartidoById = async (checklistId) => {
 
 /**
  * Crea una nueva atención kinésica
- * @param {Object} atencionData - Datos de la atención
+ * @param {Object} datosAtencion - Datos de la atención a crear
  * @returns {Promise} - Promesa con la respuesta
  */
-export const createAtencionKinesica = async (atencionData) => {
+export const addAtencionKinesica = async (datosAtencion) => {
   try {
-    const response = await api.post('/atenciones/', atencionData);
+    // Si estamos en modo desarrollo, simular la creación
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para addAtencionKinesica');
+      console.log('Datos recibidos:', datosAtencion);
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Crear una nueva atención simulada
+      const nuevaAtencion = {
+        id: MOCK_DATA.atenciones.length + 1,
+        ...datosAtencion,
+        fecha_creacion: new Date().toISOString(),
+        profesional_a_cargo: {
+          id: 1,
+          nombre: "Kinesiólogo Demo"
+        }
+      };
+      
+      // Agregar al mock data
+      MOCK_DATA.atenciones.push(nuevaAtencion);
+      
+      return nuevaAtencion;
+    }
+
+    // Si no estamos en modo desarrollo, hacer la petición real
+    const response = await api.post('/atenciones/', datosAtencion);
     return response.data;
   } catch (error) {
     console.error('Error al crear atención kinésica:', error);
-    throw error;
+    throw error.response?.data || error;
   }
 };
 
@@ -663,6 +718,34 @@ export const addChecklist = async (datosChecklist) => {
   } catch (error) {
     console.error('Error en addChecklist:', error);
     throw error;
+  }
+};
+
+/**
+ * Obtiene las atenciones kinésicas de un jugador específico
+ * @param {number} jugadorId - ID del jugador
+ * @returns {Promise} - Promesa con la lista de atenciones
+ */
+export const getAtencionesPorJugador = async (jugadorId) => {
+  try {
+    if (DEV_MODE_NO_AUTH) {
+      console.log(`Usando datos simulados para getAtencionesPorJugador(${jugadorId})`);
+      const atencionesFiltradas = MOCK_DATA.atenciones
+        .filter(atencion => atencion.jugador === jugadorId)
+        .sort((a, b) => new Date(b.fecha_atencion) - new Date(a.fecha_atencion));
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return atencionesFiltradas;
+    }
+
+    console.log(`Realizando petición real a /atenciones/?jugador=${jugadorId}`);
+    const response = await api.get(`/atenciones/?jugador=${jugadorId}`);
+    
+    const atenciones = Array.isArray(response.data) ? response.data : response.data.results;
+    return atenciones.sort((a, b) => new Date(b.fecha_atencion) - new Date(a.fecha_atencion));
+  } catch (error) {
+    console.error('Error al obtener atenciones del jugador:', error);
+    throw new Error('Error al cargar las atenciones del jugador');
   }
 };
 

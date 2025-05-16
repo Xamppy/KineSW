@@ -1,10 +1,11 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logoSW from '../assets/images/logo-sw.png';
 import { toast } from 'react-toastify';
 
 const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     // Eliminar el token de autenticación
@@ -15,16 +16,39 @@ const Header = () => {
     navigate('/login');
   };
 
+  const handleLogoClick = () => {
+    // Solo navegar al dashboard si no estamos en la página de login o registro
+    if (!location.pathname.includes('login') && !location.pathname.includes('register')) {
+      navigate('/dashboard');
+    }
+  };
+
+  const handleLogoKeyDown = (event) => {
+    // Activar con Enter o Space
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleLogoClick();
+    }
+  };
+
   return (
     <header className="bg-wanderers-green px-4 py-3 shadow-md">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center flex-shrink-0">
-          <img 
-            src={logoSW} 
-            alt="Logo Santiago Wanderers" 
-            className="h-12 w-auto mr-4"
+          <div 
+            role="button"
+            onClick={handleLogoClick}
+            onKeyDown={handleLogoKeyDown}
+            className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg"
             tabIndex="0"
-          />
+            aria-label="Ir al Dashboard"
+          >
+            <img 
+              src={logoSW} 
+              alt="Logo Santiago Wanderers" 
+              className="h-12 w-auto mr-4 hover:opacity-90 transition-opacity duration-200"
+            />
+          </div>
           <h1 className="text-wanderers-white text-xl font-bold whitespace-nowrap">
             Equipo Médico Santiago Wanderers
           </h1>

@@ -9,6 +9,7 @@ import AddChecklistPage from './pages/AddChecklistPage';
 import DivisionSelectionPage from './pages/DivisionSelectionPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import AtencionesPage from './pages/AtencionesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const Router = () => {
@@ -48,6 +49,12 @@ const Router = () => {
             </ProtectedRoute>
           } />
         </Route>
+        {/* Nueva ruta para Atenciones Kinésicas */}
+        <Route path="atenciones-kinesicas" element={
+          <ProtectedRoute>
+            <AtencionesPage />
+          </ProtectedRoute>
+        } />
         {/* Nueva ruta para Checklist Post-Partido */}
         <Route path="checklist-post-partido">
           <Route path="nuevo" element={

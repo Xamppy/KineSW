@@ -129,7 +129,7 @@ const LoginPage = () => {
         {/* Logo y título */}
         <div className="flex flex-col items-center mb-6">
           <img src={logoSW} alt="Logo Santiago Wanderers" className="w-13 h-auto mb-3 object-contain" />
-          <h1 className="text-[#07421a] text-2xl font-bold text-center">Equipo médico Santiago Wanderers</h1>
+          <h1 className="text-[#07421a] text-2xl font-bold text-center">Equipo Médico Santiago Wanderers</h1>
         </div>
 
         {/* Formulario de login */}

@@ -520,45 +520,44 @@ const AddChecklistPage = () => {
                           placeholder="Describa el tratamiento realizado..."
                         />
                       </div>
+
+                      {/* Mecanismo del Dolor/Lesión */}
+                      <div className="border-t border-gray-200 pt-6">
+                        <label className="block text-sm font-medium text-wanderers mb-3">
+                          Posible mecanismo de lesión (Opcional)
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          {OPCIONES_MECANISMO.map(({ valor, etiqueta }) => (
+                            <div
+                              key={valor}
+                              className={`
+                                relative flex items-center justify-center p-4 border rounded-lg cursor-pointer
+                                ${checklistData.mecanismo_dolor_evaluado === valor 
+                                  ? 'border-wanderers bg-wanderers text-white' 
+                                  : 'border-gray-200 hover:border-wanderers hover:bg-gray-50'}
+                              `}
+                              onClick={() => setChecklistData(prev => ({
+                                ...prev,
+                                mecanismo_dolor_evaluado: valor
+                              }))}
+                            >
+                              <input
+                                type="radio"
+                                name="mecanismo_dolor_evaluado"
+                                value={valor}
+                                checked={checklistData.mecanismo_dolor_evaluado === valor}
+                                onChange={() => {}}
+                                className="sr-only"
+                              />
+                              <span className={`text-sm font-medium ${checklistData.mecanismo_dolor_evaluado === valor ? 'text-white' : 'text-gray-700'}`}>
+                                {etiqueta}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
-
-                  {/* Mecanismo del Dolor/Lesión */}
-                  <div className="border-t border-gray-200 pt-6">
-                    <label className="block text-sm font-medium text-wanderers mb-3">
-                      Posible Mecanismo {checklistData.dolor_molestia ? '*' : '(Opcional)'}
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      {OPCIONES_MECANISMO.map(({ valor, etiqueta }) => (
-                        <div
-                          key={valor}
-                          className={`
-                            relative flex items-center justify-center p-4 border rounded-lg cursor-pointer
-                            ${checklistData.mecanismo_dolor_evaluado === valor 
-                              ? 'border-wanderers bg-wanderers text-white' 
-                              : 'border-gray-200 hover:border-wanderers hover:bg-gray-50'}
-                          `}
-                          onClick={() => setChecklistData(prev => ({
-                            ...prev,
-                            mecanismo_dolor_evaluado: valor
-                          }))}
-                        >
-                          <input
-                            type="radio"
-                            name="mecanismo_dolor_evaluado"
-                            value={valor}
-                            checked={checklistData.mecanismo_dolor_evaluado === valor}
-                            onChange={() => {}}
-                            className="sr-only"
-                            required={checklistData.dolor_molestia}
-                          />
-                          <span className={`text-sm font-medium ${checklistData.mecanismo_dolor_evaluado === valor ? 'text-white' : 'text-gray-700'}`}>
-                            {etiqueta}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
 
                   {/* Observaciones Generales */}
                   <div className="border-t border-gray-200 pt-6">
