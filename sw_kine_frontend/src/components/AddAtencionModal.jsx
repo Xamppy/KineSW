@@ -11,6 +11,12 @@ const AddAtencionModal = ({
 }) => {
   if (!isOpen) return null;
 
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   const handleNewAtencionChange = (e) => {
     const { name, value } = e.target;
     setNewAtencionData(prev => ({
@@ -55,7 +61,10 @@ const AddAtencionModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 overflow-hidden">
         {/* Encabezado del modal */}
         <div className="bg-wanderers px-6 py-4">

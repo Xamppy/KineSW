@@ -3,6 +3,12 @@ import React from 'react';
 const AtencionDetailModal = ({ show, onClose, atencion }) => {
   if (!show || !atencion) return null;
 
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   const formatDate = (dateString) => {
     const options = { 
       year: 'numeric', 
@@ -36,7 +42,10 @@ const AtencionDetailModal = ({ show, onClose, atencion }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 overflow-hidden">
         {/* Encabezado */}
         <div className="bg-wanderers px-6 py-4">
