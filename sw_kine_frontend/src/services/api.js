@@ -288,6 +288,74 @@ const MOCK_DATA = {
       ]
     }
   ],
+  lesionesInactivas: [
+    {
+      id: 3,
+      jugador: {
+        id: 1,
+        rut: '19.345.678-9',
+        nombres: 'Kevin Andrés',
+        apellidos: 'Valenzuela Rosales',
+        division_nombre: 'Primer Equipo'
+      },
+      fecha_lesion: '2024-03-15',
+      fecha_fin: '2024-04-12',
+      diagnostico_medico: 'Esguince de tobillo derecho grado II',
+      esta_activa: false,
+      tipo_lesion: 'ligamentosa',
+      tipo_lesion_display: 'Ligamentosa',
+      region_cuerpo: 'tobillo_der',
+      region_cuerpo_display: 'Tobillo Derecho',
+      gravedad_lesion: 'moderada',
+      gravedad_lesion_display: 'Moderada (8-28 días)',
+      dias_recuperacion_estimados: 21,
+      dias_recuperacion_reales: 28
+    },
+    {
+      id: 4,
+      jugador: {
+        id: 2,
+        rut: '18.765.432-1',
+        nombres: 'Matías Ignacio',
+        apellidos: 'González Rojas',
+        division_nombre: 'Primer Equipo'
+      },
+      fecha_lesion: '2024-02-10',
+      fecha_fin: '2024-02-24',
+      diagnostico_medico: 'Contractura cervical',
+      esta_activa: false,
+      tipo_lesion: 'muscular',
+      tipo_lesion_display: 'Muscular',
+      region_cuerpo: 'cuello',
+      region_cuerpo_display: 'Cuello',
+      gravedad_lesion: 'leve',
+      gravedad_lesion_display: 'Leve (1-7 días)',
+      dias_recuperacion_estimados: 7,
+      dias_recuperacion_reales: 14
+    },
+    {
+      id: 5,
+      jugador: {
+        id: 1,
+        rut: '19.345.678-9',
+        nombres: 'Kevin Andrés',
+        apellidos: 'Valenzuela Rosales',
+        division_nombre: 'Primer Equipo'
+      },
+      fecha_lesion: '2023-11-20',
+      fecha_fin: '2024-01-15',
+      diagnostico_medico: 'Distensión en cuádriceps izquierdo',
+      esta_activa: false,
+      tipo_lesion: 'muscular',
+      tipo_lesion_display: 'Muscular',
+      region_cuerpo: 'muslo_ant_izq',
+      region_cuerpo_display: 'Muslo Anterior Izquierdo',
+      gravedad_lesion: 'grave',
+      gravedad_lesion_display: 'Grave (+28 días)',
+      dias_recuperacion_estimados: 35,
+      dias_recuperacion_reales: 56
+    }
+  ],
   estadosDiarios: [
     {
       id: 1,
@@ -787,10 +855,171 @@ export const addAtencionKinesica = async (datosAtencion) => {
  */
 export const createLesion = async (lesionData) => {
   try {
+    console.log('=== CREATE LESION DEBUG ===');
+    console.log('Datos enviados:', lesionData);
+    console.log('Tipo de datos:', typeof lesionData);
+    console.log('Estructura:', JSON.stringify(lesionData, null, 2));
+    console.log('Modo desarrollo:', DEV_MODE_NO_AUTH);
+    
+    // Si estamos en modo desarrollo, simular la creación
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para createLesion');
+      
+      // Validaciones básicas en modo desarrollo
+      if (!lesionData.jugador) {
+        throw new Error('El campo jugador es requerido');
+      }
+      if (!lesionData.fecha_lesion) {
+        throw new Error('El campo fecha_lesion es requerido');
+      }
+      if (!lesionData.diagnostico_medico || !lesionData.diagnostico_medico.trim()) {
+        throw new Error('El campo diagnostico_medico es requerido');
+      }
+      
+      // Verificar que el jugador existe
+      const jugadorExiste = MOCK_DATA.jugadores.find(j => j.id === lesionData.jugador);
+      if (!jugadorExiste) {
+        throw new Error('El jugador seleccionado no existe');
+      }
+      
+      // Función para generar display names correctos
+      const getDisplayValues = (lesionData) => {
+        const displays = {};
+        
+        // Gravedad con formato completo
+        switch (lesionData.gravedad_lesion) {
+          case 'leve':
+            displays.gravedad_lesion_display = 'Leve (1-7 días)';
+            break;
+          case 'moderada':
+            displays.gravedad_lesion_display = 'Moderada (8-28 días)';
+            break;
+          case 'grave':
+            displays.gravedad_lesion_display = 'Grave (+28 días)';
+            break;
+          case 'severa':
+            displays.gravedad_lesion_display = 'Severa (+28 días)';
+            break;
+          default:
+            displays.gravedad_lesion_display = lesionData.gravedad_lesion ? 
+              lesionData.gravedad_lesion.charAt(0).toUpperCase() + lesionData.gravedad_lesion.slice(1) : 
+              'Sin especificar';
+        }
+        
+        // Tipo de lesión con formato
+        switch (lesionData.tipo_lesion) {
+          case 'muscular':
+            displays.tipo_lesion_display = 'Muscular';
+            break;
+          case 'ligamentosa':
+            displays.tipo_lesion_display = 'Ligamentosa';
+            break;
+          case 'osea':
+          case 'ósea':
+            displays.tipo_lesion_display = 'Ósea';
+            break;
+          case 'tendinosa':
+            displays.tipo_lesion_display = 'Tendinosa';
+            break;
+          case 'articular':
+            displays.tipo_lesion_display = 'Articular';
+            break;
+          default:
+            displays.tipo_lesion_display = lesionData.tipo_lesion ? 
+              lesionData.tipo_lesion.charAt(0).toUpperCase() + lesionData.tipo_lesion.slice(1) : 
+              'Sin especificar';
+        }
+        
+        // Región del cuerpo con formato (simplificado)
+        displays.region_cuerpo_display = lesionData.region_cuerpo ? 
+          lesionData.region_cuerpo.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+          'Sin especificar';
+        
+        return displays;
+      };
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Generar valores display
+      const displayValues = getDisplayValues(lesionData);
+      
+      // Crear una nueva lesión simulada
+      const nuevaLesion = {
+        id: Date.now(), // ID simulado único
+        ...lesionData,
+        jugador: jugadorExiste, // Incluir datos completos del jugador
+        esta_activa: true,
+        fecha_creacion: new Date().toISOString(),
+        ...displayValues // Incluir todos los campos display generados
+      };
+      
+      // Agregar a los datos simulados (opcional)
+      MOCK_DATA.lesionesActivas = MOCK_DATA.lesionesActivas || [];
+      MOCK_DATA.lesionesActivas.push(nuevaLesion);
+      
+      console.log('Lesión simulada creada:', nuevaLesion);
+      console.log('Display values generados:', displayValues);
+      return nuevaLesion;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
     const response = await api.post('/lesiones/', lesionData);
+    console.log('Respuesta exitosa:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error al crear registro de lesión:', error);
+    
+    // Si es modo desarrollo y el error es de validación, propagar directamente
+    if (DEV_MODE_NO_AUTH && error.message && !error.response) {
+      throw error;
+    }
+    
+    // Capturar detalles específicos del error 400
+    if (error.response) {
+      console.error('Status:', error.response.status);
+      console.error('Headers:', error.response.headers);
+      console.error('Data:', error.response.data);
+      
+      // Si es un error 400, intentar mostrar detalles específicos
+      if (error.response.status === 400) {
+        console.error('=== ERROR 400 DETAILS ===');
+        console.error('Response data:', JSON.stringify(error.response.data, null, 2));
+        
+        // Crear mensaje de error más específico
+        let errorMessage = 'Error de validación: ';
+        
+        if (error.response.data) {
+          if (typeof error.response.data === 'string') {
+            errorMessage += error.response.data;
+          } else if (error.response.data.detail) {
+            errorMessage += error.response.data.detail;
+          } else if (error.response.data.message) {
+            errorMessage += error.response.data.message;
+          } else if (typeof error.response.data === 'object') {
+            // Si es un objeto con errores de validación por campo
+            const fieldErrors = [];
+            for (const [field, messages] of Object.entries(error.response.data)) {
+              if (Array.isArray(messages)) {
+                fieldErrors.push(`${field}: ${messages.join(', ')}`);
+              } else {
+                fieldErrors.push(`${field}: ${messages}`);
+              }
+            }
+            errorMessage += fieldErrors.join('; ');
+          }
+        } else {
+          errorMessage += 'Error desconocido de validación';
+        }
+        
+        // Crear error con mensaje mejorado
+        const enhancedError = new Error(errorMessage);
+        enhancedError.response = error.response;
+        enhancedError.validationDetails = error.response.data;
+        throw enhancedError;
+      }
+    }
+    
     throw error;
   }
 };
@@ -1222,6 +1451,59 @@ export const getPosiblesEstadosLesion = async () => {
       { value: 'gimnasio', label: 'Tratamiento en Gimnasio' },
       { value: 'reintegro', label: 'Reintegro Deportivo' }
     ];
+  }
+};
+
+/**
+ * Obtiene todas las lesiones (activas e inactivas) de un jugador específico
+ * @param {number} jugadorId - ID del jugador
+ * @returns {Promise} - Promesa con todas las lesiones del jugador
+ */
+export const getAllLesionesPorJugador = async (jugadorId) => {
+  try {
+    console.log(`getAllLesionesPorJugador llamado para jugador ID: ${jugadorId}`);
+    
+    // Si estamos en modo desarrollo, devolver datos simulados
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para getAllLesionesPorJugador');
+      
+      // Buscar todas las lesiones del jugador (activas e inactivas)
+      const lesionesJugador = [
+        ...MOCK_DATA.lesionesActivas.filter(lesion => lesion.jugador.id === parseInt(jugadorId)),
+        ...MOCK_DATA.lesionesInactivas.filter(lesion => lesion.jugador.id === parseInt(jugadorId))
+      ];
+      
+      // Ordenar por fecha de lesión (más recientes primero)
+      lesionesJugador.sort((a, b) => new Date(b.fecha_lesion) - new Date(a.fecha_lesion));
+      
+      console.log(`Lesiones encontradas para jugador ${jugadorId}:`, lesionesJugador);
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      return lesionesJugador;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log(`Realizando petición real a /api/lesiones/?jugador=${jugadorId}&activas=all`);
+    const response = await api.get('/api/lesiones/', { 
+      params: { 
+        jugador: jugadorId,
+        activas: 'all' // Parámetro para obtener todas las lesiones (activas e inactivas)
+      } 
+    });
+    console.log('Respuesta de lesiones del jugador:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Error al obtener lesiones del jugador ${jugadorId}:`, error);
+    if (error.response?.status === 401) {
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
   }
 };
 

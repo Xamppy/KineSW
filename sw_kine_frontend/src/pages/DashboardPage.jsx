@@ -83,6 +83,34 @@ const DashboardPage = () => {
             <p className="text-gray-600">Ver estado actual de lesiones de los jugadores</p>
           </Link>
 
+          {/* Gestión de Lesiones */}
+          <Link
+            to="/lesiones"
+            className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 p-6 border border-gray-200/50"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-wanderers-green">Gestión de Lesiones</h2>
+              <svg className="w-6 h-6 text-wanderers-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m-6V4" />
+              </svg>
+            </div>
+            <p className="text-gray-600">Registrar y gestionar lesiones de los jugadores</p>
+          </Link>
+
+          {/* Historial de Lesiones */}
+          <Link
+            to="/historial-lesiones"
+            className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 p-6 border border-gray-200/50"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-wanderers-green">Historial de Lesiones</h2>
+              <svg className="w-6 h-6 text-wanderers-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+            </div>
+            <p className="text-gray-600">Ver historial completo de lesiones por jugador</p>
+          </Link>
+
           {/* Divisiones */}
           <Link
             to="/divisiones"

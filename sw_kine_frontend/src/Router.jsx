@@ -11,6 +11,9 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AtencionesPage from './pages/AtencionesPage';
 import EstadoLesionPage from './pages/EstadoLesionPage';
+import LesionesPage from './pages/LesionesPage';
+import NuevaLesionPage from './pages/NuevaLesionPage';
+import HistorialLesionesPage from './pages/HistorialLesionesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const Router = () => {
@@ -68,6 +71,24 @@ const Router = () => {
         <Route path="estado-lesion" element={
           <ProtectedRoute>
             <EstadoLesionPage />
+          </ProtectedRoute>
+        } />
+        {/* Nueva ruta para Gestión de Lesiones */}
+        <Route path="lesiones" element={
+          <ProtectedRoute>
+            <LesionesPage />
+          </ProtectedRoute>
+        } />
+        {/* Nueva ruta para Registrar Nueva Lesión */}
+        <Route path="lesiones/nueva" element={
+          <ProtectedRoute>
+            <NuevaLesionPage />
+          </ProtectedRoute>
+        } />
+        {/* Nueva ruta para Historial de Lesiones */}
+        <Route path="historial-lesiones" element={
+          <ProtectedRoute>
+            <HistorialLesionesPage />
           </ProtectedRoute>
         } />
         {/* Ruta 404 */}
