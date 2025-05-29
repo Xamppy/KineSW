@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Division, Jugador, AtencionKinesica, Lesion, ArchivoMedico, ChecklistPostPartido, validar_rut_chileno
+from .models import Division, Jugador, AtencionKinesica, Lesion, ArchivoMedico, ChecklistPostPartido, validar_rut_chileno, EstadoDiarioLesion
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -222,4 +222,34 @@ class ChecklistPostPartidoSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ChecklistPostPartido
-        fields = '__all__' 
+        fields = '__all__'
+
+class EstadoDiarioLesionSerializer(serializers.ModelSerializer):
+    registrado_por_nombre = serializers.CharField(source='registrado_por.get_full_name', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    
+    class Meta:
+        model = EstadoDiarioLesion
+        fields = ['id', 'lesion', 'fecha', 'estado', 'estado_display', 'registrado_por', 'registrado_por_nombre', 'observaciones']
+        extra_kwargs = {
+            'lesion': {'required': True},
+            'registrado_por': {'required': False, 'read_only': True}
+        }
+
+class LesionActivaSerializer(serializers.ModelSerializer):
+    jugador = JugadorSerializer(read_only=True)
+    tipo_lesion_display = serializers.CharField(source='get_tipo_lesion_display', read_only=True)
+    region_cuerpo_display = serializers.CharField(source='get_region_cuerpo_display', read_only=True)
+    gravedad_lesion_display = serializers.CharField(source='get_gravedad_lesion_display', read_only=True)
+    historial_diario = EstadoDiarioLesionSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Lesion
+        fields = [
+            'id', 'jugador', 'fecha_lesion', 'diagnostico_medico',
+            'esta_activa', 'fecha_fin', 'tipo_lesion', 'tipo_lesion_display',
+            'region_cuerpo', 'region_cuerpo_display', 'gravedad_lesion',
+            'gravedad_lesion_display', 'dias_recuperacion_estimados',
+            'dias_recuperacion_reales', 'historial_diario'
+        ]
+        read_only_fields = ['esta_activa', 'fecha_fin'] 

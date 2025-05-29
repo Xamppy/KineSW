@@ -106,6 +106,240 @@ const MOCK_DATA = {
     { id: 2, nombre: 'Femenino', descripcion: 'Equipo principal femenino' },
     { id: 3, nombre: 'Sub-21', descripcion: 'Equipo de desarrollo sub-21' }
   ],
+  lesionesActivas: [
+    {
+      id: 1,
+      jugador: {
+        id: 1,
+        rut: '19.345.678-9',
+        nombres: 'Kevin Andrés',
+        apellidos: 'Valenzuela Rosales',
+        division_nombre: 'Primer Equipo'
+      },
+      fecha_lesion: '2024-05-20',
+      diagnostico_medico: 'Contractura en isquiotibiales izquierdo',
+      esta_activa: true,
+      tipo_lesion: 'muscular',
+      tipo_lesion_display: 'Muscular',
+      region_cuerpo: 'muslo_post_izq',
+      region_cuerpo_display: 'Muslo Posterior Izquierdo',
+      gravedad_lesion: 'moderada',
+      gravedad_lesion_display: 'Moderada (8-28 días)',
+      dias_recuperacion_estimados: 14,
+      historial_diario: [
+        {
+          id: 1,
+          fecha: '2024-12-19',
+          estado: 'gimnasio',
+          estado_display: 'Tratamiento en Gimnasio',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Evolución favorable, sin dolor en reposo'
+        },
+        {
+          id: 2,
+          fecha: '2024-12-18',
+          estado: 'camilla',
+          estado_display: 'Tratamiento en Camilla',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Tratamiento con ultrasonido y masaje'
+        },
+        {
+          id: 3,
+          fecha: '2024-12-17',
+          estado: 'camilla',
+          estado_display: 'Tratamiento en Camilla',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Reducción de inflamación'
+        },
+        {
+          id: 4,
+          fecha: '2024-12-16',
+          estado: 'gimnasio',
+          estado_display: 'Tratamiento en Gimnasio',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Ejercicios de movilidad'
+        },
+        {
+          id: 5,
+          fecha: '2024-12-15',
+          estado: 'camilla',
+          estado_display: 'Tratamiento en Camilla',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Primera sesión post-lesión'
+        },
+        {
+          id: 6,
+          fecha: '2024-12-13',
+          estado: 'gimnasio',
+          estado_display: 'Tratamiento en Gimnasio',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Fortalecimiento muscular'
+        },
+        {
+          id: 7,
+          fecha: '2024-12-12',
+          estado: 'camilla',
+          estado_display: 'Tratamiento en Camilla',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Masaje descontracturante'
+        },
+        {
+          id: 8,
+          fecha: '2024-12-11',
+          estado: 'gimnasio',
+          estado_display: 'Tratamiento en Gimnasio',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Ejercicios de estiramiento'
+        },
+        {
+          id: 9,
+          fecha: '2024-12-10',
+          estado: 'camilla',
+          estado_display: 'Tratamiento en Camilla',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Terapia con hielo'
+        },
+        {
+          id: 10,
+          fecha: '2024-12-09',
+          estado: 'gimnasio',
+          estado_display: 'Tratamiento en Gimnasio',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Ejercicios de rehabilitación'
+        }
+      ]
+    },
+    {
+      id: 2,
+      jugador: {
+        id: 3,
+        rut: '20.123.456-7',
+        nombres: 'Lucas Antonio',
+        apellidos: 'Pérez Mendoza',
+        division_nombre: 'Primer Equipo'
+      },
+      fecha_lesion: '2024-05-25',
+      diagnostico_medico: 'Esguince grado I en tobillo derecho',
+      esta_activa: true,
+      tipo_lesion: 'ligamentosa',
+      tipo_lesion_display: 'Ligamentosa',
+      region_cuerpo: 'tobillo_der',
+      region_cuerpo_display: 'Tobillo Derecho',
+      gravedad_lesion: 'leve',
+      gravedad_lesion_display: 'Leve (1-7 días)',
+      dias_recuperacion_estimados: 7,
+      historial_diario: [
+        {
+          id: 11,
+          fecha: '2024-12-19',
+          estado: 'reintegro',
+          estado_display: 'Reintegro Deportivo',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Listo para entrenamientos completos'
+        },
+        {
+          id: 12,
+          fecha: '2024-12-18',
+          estado: 'reintegro',
+          estado_display: 'Reintegro Deportivo',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Pruebas funcionales exitosas'
+        },
+        {
+          id: 13,
+          fecha: '2024-12-17',
+          estado: 'gimnasio',
+          estado_display: 'Tratamiento en Gimnasio',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Ejercicios de propiocepción'
+        },
+        {
+          id: 14,
+          fecha: '2024-12-16',
+          estado: 'gimnasio',
+          estado_display: 'Tratamiento en Gimnasio',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Fortalecimiento de tobillo'
+        },
+        {
+          id: 15,
+          fecha: '2024-12-15',
+          estado: 'camilla',
+          estado_display: 'Tratamiento en Camilla',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Evaluación inicial'
+        },
+        {
+          id: 16,
+          fecha: '2024-12-13',
+          estado: 'gimnasio',
+          estado_display: 'Tratamiento en Gimnasio',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Movilidad articular'
+        },
+        {
+          id: 17,
+          fecha: '2024-12-12',
+          estado: 'camilla',
+          estado_display: 'Tratamiento en Camilla',
+          registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+          observaciones: 'Reducción de edema'
+        }
+      ]
+    }
+  ],
+  estadosDiarios: [
+    {
+      id: 1,
+      lesion: 1,
+      fecha: '2024-12-19',
+      estado: 'gimnasio',
+      estado_display: 'Tratamiento en Gimnasio',
+      registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+      observaciones: 'Evolución favorable, sin dolor en reposo'
+    },
+    {
+      id: 2,
+      lesion: 1,
+      fecha: '2024-12-18',
+      estado: 'camilla',
+      estado_display: 'Tratamiento en Camilla',
+      registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+      observaciones: 'Tratamiento con ultrasonido y masaje'
+    },
+    {
+      id: 3,
+      lesion: 2,
+      fecha: '2024-12-19',
+      estado: 'reintegro',
+      estado_display: 'Reintegro Deportivo',
+      registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+      observaciones: 'Listo para entrenamientos completos'
+    },
+    {
+      id: 4,
+      lesion: 1,
+      fecha: '2024-12-17',
+      estado: 'camilla',
+      estado_display: 'Tratamiento en Camilla',
+      registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+      observaciones: 'Reducción de inflamación'
+    },
+    {
+      id: 5,
+      lesion: 2,
+      fecha: '2024-12-18',
+      estado: 'reintegro',
+      estado_display: 'Reintegro Deportivo',
+      registrado_por_nombre: 'Dr. Kinesiólogo Demo',
+      observaciones: 'Pruebas funcionales exitosas'
+    }
+  ],
+  estadosLesionOpciones: [
+    { value: 'camilla', label: 'Tratamiento en Camilla' },
+    { value: 'gimnasio', label: 'Tratamiento en Gimnasio' },
+    { value: 'reintegro', label: 'Reintegro Deportivo' }
+  ],
   atenciones: [
     {
       id: 1,
@@ -746,6 +980,248 @@ export const getAtencionesPorJugador = async (jugadorId) => {
   } catch (error) {
     console.error('Error al obtener atenciones del jugador:', error);
     throw new Error('Error al cargar las atenciones del jugador');
+  }
+};
+
+// ===== FUNCIONES PARA MANEJO DE ESTADOS DE LESIÓN =====
+
+/**
+ * Obtiene la lista de jugadores que actualmente tienen lesiones activas
+ * @returns {Promise} - Promesa con la lista de lesiones activas con información del jugador
+ */
+export const getJugadoresConLesionActiva = async () => {
+  try {
+    console.log('getJugadoresConLesionActiva llamado');
+    
+    // Si estamos en modo desarrollo, devolver datos simulados
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para getJugadoresConLesionActiva');
+      console.log('Lesiones activas simuladas:', MOCK_DATA.lesionesActivas);
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      return MOCK_DATA.lesionesActivas;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log('Realizando petición real a /lesiones/activas/');
+    const response = await api.get('/lesiones/activas/');
+    console.log('Respuesta de lesiones activas:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error completo en getJugadoresConLesionActiva:', error);
+    if (error.response?.status === 401) {
+      console.error('Error de autenticación: El usuario no está autenticado');
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Obtiene el historial diario de una lesión específica
+ * @param {number} lesionId - ID de la lesión
+ * @returns {Promise} - Promesa con el historial diario de la lesión
+ */
+export const getHistorialDiarioLesion = async (lesionId) => {
+  try {
+    console.log(`getHistorialDiarioLesion llamado para lesión ID: ${lesionId}`);
+    
+    // Si estamos en modo desarrollo, devolver datos simulados
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para getHistorialDiarioLesion');
+      
+      // Filtrar estados diarios por lesión
+      const historialFiltrado = MOCK_DATA.estadosDiarios
+        .filter(estado => estado.lesion === parseInt(lesionId))
+        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+      
+      console.log('Historial filtrado:', historialFiltrado);
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      return historialFiltrado;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log(`Realizando petición real a /lesiones/${lesionId}/historial_diario/`);
+    const response = await api.get(`/lesiones/${lesionId}/historial_diario/`);
+    console.log('Respuesta del historial diario:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Error al obtener historial diario de la lesión ${lesionId}:`, error);
+    if (error.response?.status === 401) {
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Añade un nuevo estado diario para una lesión
+ * @param {number} lesionId - ID de la lesión
+ * @param {string} estado - Estado del día ('camilla', 'gimnasio', 'reintegro')
+ * @param {string} fecha - Fecha en formato YYYY-MM-DD
+ * @param {string} observaciones - Observaciones opcionales
+ * @returns {Promise} - Promesa con el estado diario creado
+ */
+export const addEstadoDiario = async (lesionId, estado, fecha, observaciones = '') => {
+  try {
+    console.log(`addEstadoDiario llamado - Lesión: ${lesionId}, Estado: ${estado}, Fecha: ${fecha}`);
+    
+    const estadoData = {
+      lesion: lesionId,
+      estado: estado,
+      fecha: fecha,
+      observaciones: observaciones
+    };
+    
+    // Si estamos en modo desarrollo, simular la creación
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para addEstadoDiario');
+      console.log('Datos del estado:', estadoData);
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Crear nuevo estado simulado
+      const nuevoEstado = {
+        id: MOCK_DATA.estadosDiarios.length + 1,
+        ...estadoData,
+        estado_display: MOCK_DATA.estadosLesionOpciones.find(opt => opt.value === estado)?.label || estado,
+        registrado_por_nombre: 'Dr. Kinesiólogo Demo'
+      };
+      
+      // Agregar al mock data
+      MOCK_DATA.estadosDiarios.push(nuevoEstado);
+      
+      console.log('Nuevo estado creado:', nuevoEstado);
+      return nuevoEstado;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log('Realizando petición real a /estados-diarios/');
+    const response = await api.post('/estados-diarios/', estadoData);
+    console.log('Respuesta de creación de estado diario:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error al crear estado diario:', error);
+    if (error.response?.status === 401) {
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Finaliza una lesión marcándola como inactiva
+ * @param {number} lesionId - ID de la lesión a finalizar
+ * @returns {Promise} - Promesa con la respuesta de finalización
+ */
+export const finalizarLesion = async (lesionId) => {
+  try {
+    console.log(`finalizarLesion llamado para lesión ID: ${lesionId}`);
+    
+    // Si estamos en modo desarrollo, simular la finalización
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para finalizarLesion');
+      
+      // Buscar la lesión en los datos simulados
+      const lesionIndex = MOCK_DATA.lesionesActivas.findIndex(lesion => lesion.id === parseInt(lesionId));
+      
+      if (lesionIndex === -1) {
+        throw new Error('Lesión no encontrada');
+      }
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Marcar la lesión como finalizada (removerla de activas)
+      const lesionFinalizada = MOCK_DATA.lesionesActivas[lesionIndex];
+      MOCK_DATA.lesionesActivas.splice(lesionIndex, 1);
+      
+      const respuesta = {
+        status: 'success',
+        message: 'Lesión finalizada correctamente',
+        fecha_fin: new Date().toISOString().split('T')[0],
+        lesion: lesionFinalizada
+      };
+      
+      console.log('Lesión finalizada:', respuesta);
+      return respuesta;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log(`Realizando petición real a /lesiones/${lesionId}/finalizar/`);
+    const response = await api.post(`/lesiones/${lesionId}/finalizar/`);
+    console.log('Respuesta de finalización de lesión:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Error al finalizar lesión ${lesionId}:`, error);
+    if (error.response?.status === 401) {
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Obtiene las opciones posibles de estados de lesión
+ * @returns {Promise} - Promesa con las opciones de estado
+ */
+export const getPosiblesEstadosLesion = async () => {
+  try {
+    console.log('getPosiblesEstadosLesion llamado');
+    
+    // Si estamos en modo desarrollo, devolver datos simulados
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para getPosiblesEstadosLesion');
+      
+      // Simular retraso de red mínimo
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      return MOCK_DATA.estadosLesionOpciones;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log('Realizando petición real a /estados-lesion-opciones/');
+    const response = await api.get('/estados-lesion-opciones/');
+    console.log('Respuesta de opciones de estado:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener opciones de estado de lesión:', error);
+    if (error.response?.status === 401) {
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    // En caso de error, devolver opciones hardcodeadas como fallback
+    console.warn('Error en la petición, usando opciones hardcodeadas como fallback');
+    return [
+      { value: 'camilla', label: 'Tratamiento en Camilla' },
+      { value: 'gimnasio', label: 'Tratamiento en Gimnasio' },
+      { value: 'reintegro', label: 'Reintegro Deportivo' }
+    ];
   }
 };
 

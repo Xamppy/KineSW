@@ -31,11 +31,16 @@ const AddChecklistPage = () => {
 
   // Constantes para las opciones
   const OPCIONES_INTENSIDAD = [
-    { valor: '1', etiqueta: '1 - Muy Leve' },
-    { valor: '2', etiqueta: '2 - Leve' },
-    { valor: '3', etiqueta: '3 - Moderado' },
-    { valor: '4', etiqueta: '4 - Intenso' },
-    { valor: '5', etiqueta: '5 - Muy Intenso' }
+    { valor: '1', etiqueta: '1', color: 'bg-green-500' },
+    { valor: '2', etiqueta: '2', color: 'bg-green-500' },
+    { valor: '3', etiqueta: '3', color: 'bg-green-500' },
+    { valor: '4', etiqueta: '4', color: 'bg-yellow-500' },
+    { valor: '5', etiqueta: '5', color: 'bg-yellow-500' },
+    { valor: '6', etiqueta: '6', color: 'bg-yellow-500' },
+    { valor: '7', etiqueta: '7', color: 'bg-yellow-500' },
+    { valor: '8', etiqueta: '8', color: 'bg-red-500' },
+    { valor: '9', etiqueta: '9', color: 'bg-red-500' },
+    { valor: '10', etiqueta: '10', color: 'bg-red-500' }
   ];
 
   const OPCIONES_ZONA = [
@@ -398,35 +403,48 @@ const AddChecklistPage = () => {
                         <label className="block text-sm font-medium text-wanderers mb-3">
                           Intensidad del Dolor *
                         </label>
-                        <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
-                          {OPCIONES_INTENSIDAD.map(({ valor, etiqueta }) => (
-                            <div
-                              key={valor}
-                              className={`
-                                relative flex items-center justify-center p-4 border rounded-lg cursor-pointer
-                                ${checklistData.intensidad_dolor === valor 
-                                  ? 'border-wanderers bg-wanderers text-white' 
-                                  : 'border-gray-200 hover:border-wanderers hover:bg-gray-50'}
-                              `}
-                              onClick={() => setChecklistData(prev => ({
-                                ...prev,
-                                intensidad_dolor: valor
-                              }))}
-                            >
-                              <input
-                                type="radio"
-                                name="intensidad_dolor"
-                                value={valor}
-                                checked={checklistData.intensidad_dolor === valor}
-                                onChange={() => {}}
-                                className="sr-only"
-                                required
-                              />
-                              <span className={`text-sm font-medium ${checklistData.intensidad_dolor === valor ? 'text-white' : 'text-gray-700'}`}>
-                                {etiqueta}
-                              </span>
-                            </div>
-                          ))}
+                        <div className="space-y-2">
+                          {/* Barra de semáforo */}
+                          <div className="flex h-2 mb-4">
+                            <div className="flex-1 bg-green-500 rounded-l"></div>
+                            <div className="flex-1 bg-yellow-500"></div>
+                            <div className="flex-1 bg-red-500 rounded-r"></div>
+                          </div>
+                          <div className="text-xs flex justify-between mb-4">
+                            <span className="text-green-700">Leve (1-3)</span>
+                            <span className="text-yellow-700">Moderado (4-7)</span>
+                            <span className="text-red-700">Severo (8-10)</span>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
+                            {OPCIONES_INTENSIDAD.map(({ valor, etiqueta, color }) => (
+                              <div
+                                key={valor}
+                                className={`
+                                  relative flex items-center justify-center p-4 border rounded-lg cursor-pointer transition-all duration-200
+                                  ${checklistData.intensidad_dolor === valor 
+                                    ? `${color} border-gray-800 text-white` 
+                                    : 'border-gray-200 hover:border-gray-400'}
+                                `}
+                                onClick={() => setChecklistData(prev => ({
+                                  ...prev,
+                                  intensidad_dolor: valor
+                                }))}
+                              >
+                                <input
+                                  type="radio"
+                                  name="intensidad_dolor"
+                                  value={valor}
+                                  checked={checklistData.intensidad_dolor === valor}
+                                  onChange={() => {}}
+                                  className="sr-only"
+                                  required
+                                />
+                                <span className={`text-lg font-bold ${checklistData.intensidad_dolor === valor ? 'text-white' : 'text-gray-700'}`}>
+                                  {etiqueta}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
 

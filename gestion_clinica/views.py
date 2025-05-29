@@ -1,20 +1,23 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, filters, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 from django.contrib.auth import authenticate, login
 from django_filters.rest_framework import DjangoFilterBackend
+from django.utils import timezone
 from .models import (
     Division, Jugador, AtencionKinesica, 
-    Lesion, ArchivoMedico, ChecklistPostPartido
+    Lesion, ArchivoMedico, ChecklistPostPartido,
+    EstadoDiarioLesion
 )
 from .serializers import (
     DivisionSerializer, JugadorSerializer, 
     AtencionKinesicaSerializer, LesionSerializer,
     ArchivoMedicoSerializer, ChecklistPostPartidoSerializer,
     UserRegistrationSerializer, UserLoginSerializer, UserBasicSerializer,
-    UserSerializer
+    UserSerializer, EstadoDiarioLesionSerializer, LesionActivaSerializer
 )
 import re
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -135,6 +138,40 @@ class LesionViewSet(viewsets.ModelViewSet):
             
         return queryset
 
+    @action(detail=False, methods=['get'])
+    def activas(self, request):
+        """
+        Obtiene todas las lesiones activas
+        """
+        lesiones_activas = Lesion.objects.filter(esta_activa=True).select_related('jugador').prefetch_related('historial_diario')
+        serializer = LesionActivaSerializer(lesiones_activas, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def historial_diario(self, request, pk=None):
+        """
+        Obtiene el historial diario de una lesión específica
+        """
+        lesion = self.get_object()
+        historial = lesion.historial_diario.all()
+        serializer = EstadoDiarioLesionSerializer(historial, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def finalizar(self, request, pk=None):
+        """
+        Finaliza una lesión marcándola como inactiva
+        """
+        lesion = self.get_object()
+        lesion.esta_activa = False
+        lesion.fecha_fin = timezone.now().date()
+        lesion.save()
+        return Response({
+            'status': 'success',
+            'message': 'Lesión finalizada correctamente',
+            'fecha_fin': lesion.fecha_fin
+        }, status=status.HTTP_200_OK)
+
 class ArchivoMedicoViewSet(viewsets.ModelViewSet):
     """
     API endpoint para ver y editar archivos médicos
@@ -199,6 +236,49 @@ class ChecklistPostPartidoViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(dolor_molestia=(dolor.lower() == 'true'))
             
         return queryset
+
+class EstadoDiarioLesionViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint para ver y editar estados diarios de lesiones
+    """
+    queryset = EstadoDiarioLesion.objects.all().select_related('lesion', 'registrado_por').order_by('-fecha')
+    serializer_class = EstadoDiarioLesionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['lesion', 'fecha', 'estado']
+    search_fields = ['lesion__diagnostico_medico', 'lesion__jugador__nombres', 'lesion__jugador__apellidos', 'observaciones']
+    ordering_fields = ['fecha', 'lesion__jugador__apellidos']
+    
+    def get_queryset(self):
+        """
+        Permite filtrar por lesión
+        """
+        queryset = EstadoDiarioLesion.objects.all().select_related('lesion', 'registrado_por').order_by('-fecha')
+        lesion = self.request.query_params.get('lesion', None)
+        
+        if lesion is not None:
+            queryset = queryset.filter(lesion=lesion)
+            
+        return queryset
+
+    def perform_create(self, serializer):
+        """
+        Asigna automáticamente el usuario que registra
+        """
+        serializer.save(registrado_por=self.request.user)
+
+class EstadosLesionListView(APIView):
+    """
+    Vista simple para obtener las opciones de estado de lesión
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        estados = [
+            {'value': choice[0], 'label': choice[1]}
+            for choice in EstadoDiarioLesion.ESTADO_CHOICES
+        ]
+        return Response(estados)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])

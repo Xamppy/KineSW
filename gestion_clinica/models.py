@@ -15,14 +15,14 @@ def validar_rut_chileno(value):
         # Eliminar puntos y guión
         rut_limpio = re.sub(r'[^0-9kK]', '', value)
         print(f"RUT limpio: {rut_limpio}")  # Debug
-        
+    
         if len(rut_limpio) < 2:
             raise ValidationError('El RUT debe tener al menos 2 caracteres')
-        
+    
         # Separar cuerpo y dígito verificador
         cuerpo = rut_limpio[:-1]
         dv = rut_limpio[-1].upper()
-        
+    
         # Validar que el cuerpo contenga solo números
         if not cuerpo.isdigit():
             raise ValidationError('El RUT debe contener solo números antes del dígito verificador')
@@ -34,16 +34,16 @@ def validar_rut_chileno(value):
         # Calcular dígito verificador
         suma = 0
         multiplo = 2
-        
+    
         for r in reversed(cuerpo):
             suma += int(r) * multiplo
             multiplo = multiplo + 1 if multiplo < 7 else 2
-        
+    
         resto = suma % 11
         dv_calculado = '0' if resto == 0 else 'K' if resto == 1 else str(11 - resto)
         
         print(f"DV calculado: {dv_calculado}, DV recibido: {dv}")  # Debug
-        
+    
         if dv != dv_calculado:
             raise ValidationError('El RUT ingresado no es válido')
             
@@ -167,6 +167,8 @@ class Lesion(models.Model):
     jugador = models.ForeignKey(Jugador, on_delete=models.CASCADE, related_name="lesiones")
     fecha_lesion = models.DateField()
     diagnostico_medico = models.TextField()
+    esta_activa = models.BooleanField(default=True, help_text="Indica si la lesión está actualmente activa")
+    fecha_fin = models.DateField(null=True, blank=True, help_text="Fecha en que se da por finalizada la lesión")
     
     TIPO_LESION_CHOICES = [
         ('muscular', 'Muscular'),
@@ -267,6 +269,28 @@ class Lesion(models.Model):
         verbose_name = "Lesión"
         verbose_name_plural = "Lesiones"
         ordering = ['-fecha_lesion']
+
+class EstadoDiarioLesion(models.Model):
+    ESTADO_CHOICES = [
+        ('camilla', 'Tratamiento en Camilla'),
+        ('gimnasio', 'Tratamiento en Gimnasio'),
+        ('reintegro', 'Reintegro Deportivo'),
+    ]
+
+    lesion = models.ForeignKey(Lesion, on_delete=models.CASCADE, related_name='historial_diario')
+    fecha = models.DateField()
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES)
+    registrado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    observaciones = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.lesion} - {self.fecha} - {self.get_estado_display()}"
+
+    class Meta:
+        verbose_name = "Estado Diario de Lesión"
+        verbose_name_plural = "Estados Diarios de Lesiones"
+        unique_together = ('lesion', 'fecha')
+        ordering = ['-fecha']
 
 class ArchivoMedico(models.Model):
     jugador = models.ForeignKey(Jugador, on_delete=models.CASCADE, related_name="archivos_medicos")

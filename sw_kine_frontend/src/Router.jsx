@@ -10,6 +10,7 @@ import DivisionSelectionPage from './pages/DivisionSelectionPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AtencionesPage from './pages/AtencionesPage';
+import EstadoLesionPage from './pages/EstadoLesionPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const Router = () => {
@@ -63,6 +64,12 @@ const Router = () => {
             </ProtectedRoute>
           } />
         </Route>
+        {/* Nueva ruta para Estado de Lesión */}
+        <Route path="estado-lesion" element={
+          <ProtectedRoute>
+            <EstadoLesionPage />
+          </ProtectedRoute>
+        } />
         {/* Ruta 404 */}
         <Route path="*" element={
           <div className="p-4">
