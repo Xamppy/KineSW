@@ -45,3 +45,47 @@ body {
   --tw-border-opacity: 1;
   border-color: var(--wanderers-green);
 }
+
+/* Clases de utilidad para colores de Wanderers */
+.text-wanderers-green {
+  --tw-text-opacity: 1;
+  color: var(--wanderers-green);
+}
+
+.bg-wanderers-green {
+  --tw-bg-opacity: 1;
+  background-color: var(--wanderers-green);
+}
+
+.border-wanderers-green {
+  --tw-border-opacity: 1;
+  border-color: var(--wanderers-green);
+}
+
+/* Variantes de hover */
+.hover\:text-wanderers-green:hover {
+  --tw-text-opacity: 1;
+  color: var(--wanderers-green);
+}
+
+.hover\:bg-wanderers-green:hover {
+  --tw-bg-opacity: 1;
+  background-color: var(--wanderers-green);
+}
+
+.hover\:border-wanderers-green:hover {
+  --tw-border-opacity: 1;
+  border-color: var(--wanderers-green);
+}
+
+/* Hover con opacidad para efectos más suaves */
+.hover\:bg-wanderers-green-dark:hover {
+  --tw-bg-opacity: 1;
+  background-color: #005530; /* Una versión más oscura del verde Wanderers */
+}
+
+/* Focus ring para wanderers green */
+.focus\:ring-wanderers-green:focus {
+  --tw-ring-opacity: 0.5;
+  --tw-ring-color: var(--wanderers-green);
+}

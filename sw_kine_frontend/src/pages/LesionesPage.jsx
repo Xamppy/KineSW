@@ -42,7 +42,7 @@ const LesionesPage = () => {
             {/* Botón principal */}
             <Link
               to="/lesiones/nueva"
-              className="inline-flex items-center px-8 py-4 text-lg font-bold text-white bg-wanderers-green border border-transparent rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-opacity-75"
+              className="inline-flex items-center px-8 py-4 text-lg font-bold text-white bg-wanderers-green border border-transparent rounded-lg shadow-md hover:bg-wanderers-green-dark hover:shadow-lg transform hover:scale-105 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:ring-opacity-50"
             >
               <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

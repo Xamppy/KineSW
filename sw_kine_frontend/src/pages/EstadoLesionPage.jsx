@@ -671,7 +671,7 @@ const EstadoLesionPage = () => {
                       <button
                         onClick={handleGuardarEstado}
                         disabled={!estadoSeleccionadoHoy || guardandoEstado}
-                        className="bg-wanderers-green text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                        className="bg-wanderers-green text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-wanderers-green-dark transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                       >
                         {guardandoEstado ? (
                           <>
