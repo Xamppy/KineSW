@@ -91,7 +91,7 @@ const DashboardPage = () => {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-wanderers-green">Gestión de Lesiones</h2>
               <svg className="w-6 h-6 text-wanderers-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m-6V4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 1112 0v1H3v-1z" />
               </svg>
             </div>
             <p className="text-gray-600">Registrar y gestionar lesiones de los jugadores</p>
@@ -109,6 +109,20 @@ const DashboardPage = () => {
               </svg>
             </div>
             <p className="text-gray-600">Ver historial completo de lesiones por jugador</p>
+          </Link>
+
+          {/* Historial Checklists Post-Partido */}
+          <Link
+            to="/historial-checklists"
+            className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 p-6 border border-gray-200/50"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-wanderers-green">Historial Checklists Post-Partido</h2>
+              <svg className="w-6 h-6 text-wanderers-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <p className="text-gray-600">Ver historial completo de checklists post-partido</p>
           </Link>
 
           {/* Divisiones */}

@@ -14,6 +14,7 @@ import EstadoLesionPage from './pages/EstadoLesionPage';
 import LesionesPage from './pages/LesionesPage';
 import NuevaLesionPage from './pages/NuevaLesionPage';
 import HistorialLesionesPage from './pages/HistorialLesionesPage';
+import HistorialChecklistsPage from './pages/HistorialChecklistsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const Router = () => {
@@ -89,6 +90,12 @@ const Router = () => {
         <Route path="historial-lesiones" element={
           <ProtectedRoute>
             <HistorialLesionesPage />
+          </ProtectedRoute>
+        } />
+        {/* Nueva ruta para Historial de Checklists */}
+        <Route path="historial-checklists" element={
+          <ProtectedRoute>
+            <HistorialChecklistsPage />
           </ProtectedRoute>
         } />
         {/* Ruta 404 */}

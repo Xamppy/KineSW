@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "start powershell -NoExit \"cd ..; .\\venv_kine\\Scripts\\Activate.ps1; python manage.py runserver\" && start powershell -NoExit \"vite\"",
+    "dev": "start powershell -NoExit \"cd ..; .\\kine_venv\\Scripts\\Activate.ps1; python manage.py runserver\" && start powershell -NoExit \"vite\"",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

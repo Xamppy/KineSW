@@ -436,6 +436,148 @@ const MOCK_DATA = {
       estado_actual: 'En recuperación',
       observaciones: 'Seguimiento en próxima sesión'
     }
+  ],
+  checklistsPostPartido: [
+    {
+      id: 1,
+      jugador: {
+        id: 1,
+        rut: '19.345.678-9',
+        nombres: 'Kevin Andrés',
+        apellidos: 'Valenzuela Rosales',
+        division_nombre: 'Primer Equipo'
+      },
+      fecha_partido: '2024-01-15',
+      rival: 'Universidad de Chile',
+      division: 'Primera División',
+      ubicacion_partido: 'Local',
+      dolor_molestia: true,
+      ubicacion_dolor: 'Muslo izquierdo',
+      intensidad_dolor: 6,
+      mecanismo_lesion: 'sin_contacto',
+      momento_aparicion: 'durante_partido',
+      diagnostico_presuntivo: 'Posible distensión muscular en isquiotibiales',
+      tratamiento_inmediato: 'Aplicación de hielo y reposo inmediato',
+      observaciones_jugador: 'Molestia al correr, se intensifica con esfuerzo',
+      kinesiologo: {
+        id: 1,
+        nombre: 'Dr. Juan Pérez'
+      },
+      observaciones_kinesiologo: 'Evaluación post-partido. Molestia muscular leve en isquiotibiales izquierdo, seguimiento recomendado. Aplicar protocolo RICE.',
+      fecha_registro: '2024-01-15T22:30:00Z'
+    },
+    {
+      id: 2,
+      jugador: {
+        id: 2,
+        rut: '18.765.432-1',
+        nombres: 'Matías Ignacio',
+        apellidos: 'González Rojas',
+        division_nombre: 'Primer Equipo'
+      },
+      fecha_partido: '2024-01-15',
+      rival: 'Universidad de Chile',
+      division: 'Primera División',
+      ubicacion_partido: 'Local',
+      dolor_molestia: false,
+      ubicacion_dolor: null,
+      intensidad_dolor: null,
+      mecanismo_lesion: null,
+      momento_aparicion: null,
+      diagnostico_presuntivo: null,
+      tratamiento_inmediato: null,
+      observaciones_jugador: 'Sin molestias, me siento en óptimas condiciones',
+      kinesiologo: {
+        id: 1,
+        nombre: 'Dr. Juan Pérez'
+      },
+      observaciones_kinesiologo: 'Evaluación normal, sin molestias reportadas. Jugador en condiciones óptimas para próximo partido.',
+      fecha_registro: '2024-01-15T22:35:00Z'
+    },
+    {
+      id: 3,
+      jugador: {
+        id: 3,
+        rut: '20.123.456-7',
+        nombres: 'Lucas Antonio',
+        apellidos: 'Pérez Mendoza',
+        division_nombre: 'Primer Equipo'
+      },
+      fecha_partido: '2024-01-10',
+      rival: 'Colo-Colo',
+      division: 'Primera División',
+      ubicacion_partido: 'Visita',
+      dolor_molestia: true,
+      ubicacion_dolor: 'Tobillo derecho',
+      intensidad_dolor: 4,
+      mecanismo_lesion: 'contacto_directo',
+      momento_aparicion: 'durante_partido',
+      diagnostico_presuntivo: 'Esguince leve de tobillo grado I',
+      tratamiento_inmediato: 'Vendaje funcional y hielo',
+      observaciones_jugador: 'Leve molestia en tobillo, no impide caminar',
+      kinesiologo: {
+        id: 2,
+        nombre: 'Dr. María González'
+      },
+      observaciones_kinesiologo: 'Molestia leve en tobillo derecho tras entrada rival. Evaluación en próxima sesión para descartar lesión ligamentosa.',
+      fecha_registro: '2024-01-10T21:45:00Z'
+    },
+    {
+      id: 4,
+      jugador: {
+        id: 4,
+        rut: '19.876.543-2',
+        nombres: 'Diego Alejandro',
+        apellidos: 'Soto Vargas',
+        division_nombre: 'Primer Equipo'
+      },
+      fecha_partido: '2024-01-10',
+      rival: 'Colo-Colo',
+      division: 'Primera División',
+      ubicacion_partido: 'Visita',
+      dolor_molestia: false,
+      ubicacion_dolor: null,
+      intensidad_dolor: null,
+      mecanismo_lesion: null,
+      momento_aparicion: null,
+      diagnostico_presuntivo: null,
+      tratamiento_inmediato: null,
+      observaciones_jugador: 'Todo bien, partido intenso pero sin problemas',
+      kinesiologo: {
+        id: 2,
+        nombre: 'Dr. María González'
+      },
+      observaciones_kinesiologo: 'Sin molestias reportadas, estado óptimo. Excelente recuperación post-partido.',
+      fecha_registro: '2024-01-10T21:50:00Z'
+    },
+    {
+      id: 5,
+      jugador: {
+        id: 5,
+        rut: '20.234.567-8',
+        nombres: 'Sebastián Eduardo',
+        apellidos: 'Martínez Castro',
+        division_nombre: 'Primer Equipo'
+      },
+      fecha_partido: '2024-01-05',
+      rival: 'Everton',
+      division: 'Primera División',
+      ubicacion_partido: 'Local',
+      dolor_molestia: true,
+      ubicacion_dolor: 'Espalda baja',
+      intensidad_dolor: 7,
+      mecanismo_lesion: 'sobrecarga',
+      momento_aparicion: 'post_partido',
+      diagnostico_presuntivo: 'Contractura muscular paravertebral lumbar',
+      tratamiento_inmediato: 'Masaje descontracturante y relajantes musculares',
+      observaciones_jugador: 'Dolor al agacharse y levantarse, molestia constante',
+      kinesiologo: {
+        id: 1,
+        nombre: 'Dr. Juan Pérez'
+      },
+      observaciones_kinesiologo: 'Molestia en zona lumbar por sobrecarga. Requiere evaluación más detallada y tratamiento kinésico. Descanso recomendado.',
+      fecha_registro: '2024-01-05T22:15:00Z'
+    }
   ]
 };
 
@@ -805,6 +947,100 @@ export const getChecklistPostPartidoById = async (checklistId) => {
   }
 };
 
+/**
+ * Obtiene todos los checklists post-partido registrados
+ * @param {Object} params - Parámetros de consulta opcionales
+ * @param {string} [params.fecha_partido] - Filtrar por fecha de partido (YYYY-MM-DD)
+ * @param {number} [params.jugador] - Filtrar por ID de jugador
+ * @param {string} [params.rival] - Filtrar por nombre del rival
+ * @param {boolean} [params.dolor_molestia] - Filtrar por si hubo dolor/molestia
+ * @returns {Promise} - Promesa con la lista de checklists
+ */
+export const getHistorialChecklists = async (params = {}) => {
+  try {
+    console.log('getHistorialChecklists llamado con params:', params);
+    console.log('Modo desarrollo:', DEV_MODE_NO_AUTH);
+    
+    // Si estamos en modo desarrollo, devolver datos simulados
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para getHistorialChecklists');
+      
+      // Aplicar filtros según los parámetros
+      let filteredData = [...MOCK_DATA.checklistsPostPartido];
+      console.log('Datos simulados sin filtrar:', filteredData);
+      
+      if (params.fecha_partido) {
+        filteredData = filteredData.filter(checklist => 
+          checklist.fecha_partido === params.fecha_partido
+        );
+      }
+      
+      if (params.jugador) {
+        filteredData = filteredData.filter(checklist => 
+          checklist.jugador.id === parseInt(params.jugador)
+        );
+      }
+      
+      if (params.rival) {
+        filteredData = filteredData.filter(checklist => 
+          checklist.rival.toLowerCase().includes(params.rival.toLowerCase())
+        );
+      }
+      
+      if (params.dolor_molestia !== undefined) {
+        const tieneDolorMolestia = params.dolor_molestia === 'true' || params.dolor_molestia === true;
+        filteredData = filteredData.filter(checklist => 
+          checklist.dolor_molestia === tieneDolorMolestia
+        );
+      }
+      
+      // Ordenar por fecha de partido (más recientes primero)
+      filteredData.sort((a, b) => new Date(b.fecha_partido) - new Date(a.fecha_partido));
+      
+      console.log('Datos simulados filtrados y ordenados:', filteredData);
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      return filteredData;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log('Realizando petición real a /api/checklists/');
+    
+    // Agregar ordenamiento por fecha de partido descendente
+    const requestParams = {
+      ...params,
+      ordering: '-fecha_partido_evaluado' // Ordenar por fecha de partido descendente
+    };
+    
+    const response = await api.get('/api/checklists/', { params: requestParams });
+    console.log('Respuesta de la API:', response);
+    
+    // Asegurarnos de devolver el array de checklists, ya sea directamente o desde results
+    const data = Array.isArray(response.data) ? response.data : (response.data.results || []);
+    console.log('Datos procesados:', data);
+    
+    // Si el backend no soportó el ordenamiento, ordenar en frontend como fallback
+    if (Array.isArray(data)) {
+      data.sort((a, b) => new Date(b.fecha_partido || b.fecha_partido_evaluado || 0) - new Date(a.fecha_partido || a.fecha_partido_evaluado || 0));
+    }
+    
+    return data;
+    
+  } catch (error) {
+    console.error('Error completo en getHistorialChecklists:', error);
+    if (error.response?.status === 401) {
+      console.error('Error de autenticación: El usuario no está autenticado');
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
+  }
+};
+
 // Funciones para crear nuevos registros
 
 /**
@@ -1045,16 +1281,81 @@ export const createArchivoMedico = async (formData) => {
 
 /**
  * Crea un nuevo checklist post-partido
- * @param {Object} checklistData - Datos del checklist
- * @returns {Promise} - Promesa con la respuesta
+ * @param {Object} datosChecklist - Datos del checklist a crear
+ * @returns {Promise} Respuesta de la API
  */
-export const createChecklistPostPartido = async (checklistData) => {
+export const addChecklist = async (datosChecklist) => {
   try {
-    const response = await api.post('/checklists/', checklistData);
+    console.log('addChecklist llamado con datos:', datosChecklist);
+    console.log('Modo desarrollo:', DEV_MODE_NO_AUTH);
+    
+    // Si estamos en modo desarrollo, simular la creación
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para addChecklist');
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Buscar los datos completos del jugador
+      const jugadorCompleto = MOCK_DATA.jugadores.find(j => j.id === parseInt(datosChecklist.jugador));
+      
+      if (!jugadorCompleto) {
+        throw new Error('Jugador no encontrado');
+      }
+      
+      // Crear un nuevo checklist simulado con estructura completa
+      const nuevoChecklist = {
+        id: MOCK_DATA.checklistsPostPartido.length + 1,
+        jugador: {
+          id: jugadorCompleto.id,
+          rut: jugadorCompleto.rut,
+          nombres: jugadorCompleto.nombres,
+          apellidos: jugadorCompleto.apellidos,
+          division_nombre: jugadorCompleto.division_nombre
+        },
+        fecha_partido: datosChecklist.fecha_partido_evaluado,
+        rival: datosChecklist.rival || 'No especificado',
+        division: 'Primera División', // Por defecto
+        ubicacion_partido: 'Local', // Por defecto, se puede mejorar más tarde
+        dolor_molestia: datosChecklist.dolor_molestia,
+        ubicacion_dolor: datosChecklist.zona_anatomica_dolor || null,
+        intensidad_dolor: datosChecklist.intensidad_dolor ? parseInt(datosChecklist.intensidad_dolor) : null,
+        mecanismo_lesion: datosChecklist.mecanismo_dolor_evaluado || null,
+        momento_aparicion: datosChecklist.momento_aparicion_molestia || null,
+        diagnostico_presuntivo: datosChecklist.diagnostico_presuntivo_postpartido || null,
+        tratamiento_inmediato: datosChecklist.tratamiento_inmediato_realizado || null,
+        observaciones_jugador: datosChecklist.observaciones_checklist || null,
+        kinesiologo: {
+          id: 1,
+          nombre: 'Dr. Kinesiólogo Demo'
+        },
+        observaciones_kinesiologo: `Evaluación post-partido realizada el ${new Date().toLocaleDateString('es-CL')}. ${datosChecklist.dolor_molestia ? 'Se reportaron molestias que requieren seguimiento.' : 'Sin molestias reportadas.'}`,
+        fecha_registro: new Date().toISOString()
+      };
+      
+      // Agregar al mock data
+      MOCK_DATA.checklistsPostPartido.push(nuevoChecklist);
+      
+      console.log('Checklist simulado creado:', nuevoChecklist);
+      return nuevoChecklist;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log('Realizando petición real a /checklists/');
+    const response = await api.post('/checklists/', datosChecklist);
+    console.log('Respuesta de la API:', response);
+    
     return response.data;
   } catch (error) {
-    console.error('Error al crear checklist post-partido:', error);
-    throw error;
+    console.error('Error en addChecklist:', error);
+    if (error.response?.status === 401) {
+      console.error('Error de autenticación: El usuario no está autenticado');
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
   }
 };
 
@@ -1153,34 +1454,6 @@ export const addJugador = async (datosJugador) => {
     console.error('Error al crear jugador:', error);
     // Propagar el error para que pueda ser manejado por el componente
     throw error.response?.data || error;
-  }
-};
-
-/**
- * Crea un nuevo checklist post-partido
- * @param {Object} datosChecklist - Datos del checklist a crear
- * @returns {Promise} Respuesta de la API
- */
-export const addChecklist = async (datosChecklist) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/checklists/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getToken()}`
-      },
-      body: JSON.stringify(datosChecklist)
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al crear el checklist');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error en addChecklist:', error);
-    throw error;
   }
 };
 

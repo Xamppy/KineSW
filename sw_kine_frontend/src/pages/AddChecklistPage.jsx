@@ -198,7 +198,7 @@ const AddChecklistPage = () => {
 
       await addChecklist(payload);
       toast.success('Checklist guardado exitosamente');
-      navigate('/dashboard');
+      navigate('/historial-checklists');
 
     } catch (error) {
       console.error('Error al guardar el checklist:', error);
