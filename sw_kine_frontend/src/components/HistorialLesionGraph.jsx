@@ -41,6 +41,16 @@ const HistorialLesionGraph = ({ historial = [], diasMostrar = 90 }) => {
     });
   };
 
+  // Formatear fecha en formato DD-MM-YYYY
+  const formatearFechaCorta = (fecha) => {
+    if (!fecha) return '';
+    return new Date(fecha).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
   // Calcular estadísticas para la leyenda
   const estadisticas = useMemo(() => {
     const stats = {
@@ -136,8 +146,8 @@ const HistorialLesionGraph = ({ historial = [], diasMostrar = 90 }) => {
       {historialOrdenado.length > 0 && (
         <div className="mt-3 text-xs text-gray-500">
           <p>
-            Desde <span className="font-medium">{historialOrdenado[0]?.fecha}</span> hasta{' '}
-            <span className="font-medium">{historialOrdenado[historialOrdenado.length - 1]?.fecha}</span>
+            Desde <span className="font-medium">{formatearFechaCorta(historialOrdenado[0]?.fecha)}</span> hasta{' '}
+            <span className="font-medium">{formatearFechaCorta(historialOrdenado[historialOrdenado.length - 1]?.fecha)}</span>
           </p>
         </div>
       )}
