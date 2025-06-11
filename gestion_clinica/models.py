@@ -307,12 +307,37 @@ class ArchivoMedico(models.Model):
     observaciones = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.get_tipo_archivo_display()} de {self.jugador.apellidos} - {self.titulo_descripcion}"
+        return f"{self.titulo_descripcion} - {self.jugador.apellidos} ({self.fecha_documento})"
 
     class Meta:
         verbose_name = "Archivo Médico"
         verbose_name_plural = "Archivos Médicos"
         ordering = ['-fecha_documento']
+
+class Partido(models.Model):
+    CONDICION_CHOICES = [
+        ('local', 'Local'),
+        ('visitante', 'Visitante'),
+    ]
+    
+    fecha = models.DateField(help_text="Fecha del partido")
+    rival = models.CharField(max_length=100, help_text="Nombre del equipo rival")
+    condicion = models.CharField(max_length=20, choices=CONDICION_CHOICES, help_text="Local o Visitante")
+    convocados = models.ManyToManyField(Jugador, blank=True, help_text="Jugadores convocados para este partido (máximo 22)", related_name="partidos_convocados")
+    
+    def __str__(self):
+        return f'{self.fecha.strftime("%Y-%m-%d")} vs {self.rival}'
+    
+    def clean(self):
+        super().clean()
+        # Validar que no se convoquen más de 22 jugadores
+        if self.pk and self.convocados.count() > 22:
+            raise ValidationError("No se pueden convocar más de 22 jugadores para un partido.")
+    
+    class Meta:
+        verbose_name = "Partido"
+        verbose_name_plural = "Partidos"
+        ordering = ['-fecha']
 
 class ChecklistPostPartido(models.Model):
     OPCIONES_ZONA = [
@@ -357,9 +382,8 @@ class ChecklistPostPartido(models.Model):
     ]
     
     jugador = models.ForeignKey(Jugador, on_delete=models.CASCADE, related_name="checklists_post_partido")
+    partido = models.ForeignKey(Partido, on_delete=models.CASCADE, related_name='checklists', help_text="Partido al que corresponde este checklist")
     realizado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="checklists_completados")
-    fecha_partido_evaluado = models.DateField(default=timezone.now)  # Fecha del partido que se evalúa
-    rival = models.CharField(max_length=100, blank=True, null=True, help_text="Opcional: Rival del partido evaluado")
     
     dolor_molestia = models.BooleanField(default=False, verbose_name="¿Sintió Dolor/Molestia?")
     intensidad_dolor = models.CharField(max_length=20, choices=OPCIONES_INTENSIDAD, null=True, blank=True)
@@ -371,10 +395,17 @@ class ChecklistPostPartido(models.Model):
     observaciones_checklist = models.TextField(null=True, blank=True)
     fecha_registro_checklist = models.DateTimeField(auto_now_add=True)
 
+    def clean(self):
+        super().clean()
+        # Validar que el jugador esté convocado para el partido
+        if self.partido and self.jugador and self.jugador not in self.partido.convocados.all():
+            raise ValidationError("El jugador debe estar convocado para el partido antes de poder completar el checklist.")
+
     def __str__(self):
-        return f"Checklist {self.jugador.apellidos} - Partido {self.fecha_partido_evaluado.strftime('%Y-%m-%d')}"
+        return f"Checklist de {self.jugador.apellidos} - {self.partido}"
 
     class Meta:
         verbose_name = "Checklist Post-Partido"
         verbose_name_plural = "Checklists Post-Partido"
-        ordering = ['-fecha_partido_evaluado', '-fecha_registro_checklist']
+        ordering = ['-partido__fecha', '-fecha_registro_checklist']
+        unique_together = ('jugador', 'partido')  # Un jugador solo puede tener un checklist por partido

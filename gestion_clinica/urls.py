@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     DivisionViewSet, JugadorViewSet, AtencionKinesicaViewSet,
-    LesionViewSet, ArchivoMedicoViewSet, ChecklistPostPartidoViewSet,
+    LesionViewSet, ArchivoMedicoViewSet, ChecklistPostPartidoViewSet, PartidoViewSet,
     EstadoDiarioLesionViewSet, EstadosLesionListView,
     login_view, register_view
 )
@@ -18,6 +18,7 @@ router.register(r'jugadores', JugadorViewSet)
 router.register(r'atenciones', AtencionKinesicaViewSet)
 router.register(r'lesiones', LesionViewSet)
 router.register(r'archivos', ArchivoMedicoViewSet)
+router.register(r'partidos', PartidoViewSet)
 router.register(r'checklists', ChecklistPostPartidoViewSet)
 router.register(r'estados-diarios', EstadoDiarioLesionViewSet)
 

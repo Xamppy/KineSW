@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.forms import ModelForm, RadioSelect
 from django.utils.html import format_html
-from .models import Division, Jugador, AtencionKinesica, Lesion, ArchivoMedico, ChecklistPostPartido, EstadoDiarioLesion
+from .models import Division, Jugador, AtencionKinesica, Lesion, ArchivoMedico, ChecklistPostPartido, Partido, EstadoDiarioLesion
 from django import forms
 
 @admin.register(Division)
@@ -133,21 +133,83 @@ class ArchivoMedicoAdmin(admin.ModelAdmin):
             kwargs["queryset"] = Jugador.objects.filter(activo=True)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
+@admin.register(Partido)
+class PartidoAdmin(admin.ModelAdmin):
+    list_display = ('fecha', 'rival', 'condicion', 'cantidad_convocados')
+    list_filter = ('fecha', 'condicion')
+    search_fields = ('rival',)
+    date_hierarchy = 'fecha'
+    filter_horizontal = ('convocados',)  # Interface más amigable para seleccionar múltiples jugadores
+    ordering = ('-fecha',)
+    
+    fieldsets = (
+        ('Información del Partido', {
+            'fields': ('fecha', 'rival', 'condicion')
+        }),
+        ('Convocatoria', {
+            'fields': ('convocados',),
+            'description': 'Seleccione hasta 22 jugadores para la convocatoria'
+        }),
+    )
+    
+    def cantidad_convocados(self, obj):
+        """Muestra la cantidad de jugadores convocados"""
+        return obj.convocados.count()
+    cantidad_convocados.short_description = 'Convocados'
+    
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        """Filtros para los campos many-to-many"""
+        if db_field.name == "convocados":
+            kwargs["queryset"] = Jugador.objects.filter(activo=True).order_by('apellidos', 'nombres')
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
+    
+    def get_queryset(self, request):
+        """Optimiza las consultas"""
+        return super().get_queryset(request).prefetch_related('convocados')
+
 @admin.register(ChecklistPostPartido)
 class ChecklistPostPartidoAdmin(admin.ModelAdmin):
-    list_display = ('jugador', 'fecha_partido_evaluado', 'rival', 'dolor_molestia', 'realizado_por')
-    list_filter = ('fecha_partido_evaluado', 'dolor_molestia', 'realizado_por')
-    search_fields = ('jugador__nombres', 'jugador__apellidos', 'jugador__rut', 'rival', 'diagnostico_presuntivo_postpartido')
-    date_hierarchy = 'fecha_partido_evaluado'
+    list_display = ('jugador', 'get_fecha_partido', 'get_rival_partido', 'dolor_molestia', 'realizado_por')
+    list_filter = ('partido__fecha', 'dolor_molestia', 'realizado_por', 'partido__rival')
+    search_fields = ('jugador__nombres', 'jugador__apellidos', 'jugador__rut', 'partido__rival', 'diagnostico_presuntivo_postpartido')
+    date_hierarchy = 'partido__fecha'
+    
+    fieldsets = (
+        ('Información del Checklist', {
+            'fields': ('jugador', 'partido', 'realizado_por')
+        }),
+        ('Evaluación de Dolor/Molestia', {
+            'fields': ('dolor_molestia', 'intensidad_dolor', 'zona_anatomica_dolor', 'mecanismo_dolor_evaluado', 'momento_aparicion_molestia')
+        }),
+        ('Diagnóstico y Tratamiento', {
+            'fields': ('diagnostico_presuntivo_postpartido', 'tratamiento_inmediato_realizado', 'observaciones_checklist')
+        }),
+    )
+    
+    def get_fecha_partido(self, obj):
+        return obj.partido.fecha.strftime("%d/%m/%Y") if obj.partido else "-"
+    get_fecha_partido.short_description = 'Fecha Partido'
+    get_fecha_partido.admin_order_field = 'partido__fecha'
+    
+    def get_rival_partido(self, obj):
+        return obj.partido.rival if obj.partido else "-"
+    get_rival_partido.short_description = 'Rival'
+    get_rival_partido.admin_order_field = 'partido__rival'
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Filtros para los campos de relaciones"""
         if db_field.name == "jugador":
             kwargs["queryset"] = Jugador.objects.filter(activo=True)
+        if db_field.name == "partido":
+            kwargs["queryset"] = Partido.objects.all().order_by('-fecha')
         # Pre-seleccionar al usuario actual como realizado_por
         if db_field.name == "realizado_por" and request.user.is_authenticated:
             kwargs["initial"] = request.user.id
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+    
+    def get_queryset(self, request):
+        """Optimiza las consultas"""
+        return super().get_queryset(request).select_related('jugador', 'partido', 'realizado_por')
 
 @admin.register(EstadoDiarioLesion)
 class EstadoDiarioLesionAdmin(admin.ModelAdmin):

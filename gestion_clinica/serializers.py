@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Division, Jugador, AtencionKinesica, Lesion, ArchivoMedico, ChecklistPostPartido, validar_rut_chileno, EstadoDiarioLesion
+from .models import Division, Jugador, AtencionKinesica, Lesion, ArchivoMedico, ChecklistPostPartido, Partido, validar_rut_chileno, EstadoDiarioLesion
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -216,13 +216,57 @@ class ArchivoMedicoSerializer(serializers.ModelSerializer):
         model = ArchivoMedico
         fields = '__all__'
 
+class PartidoSerializer(serializers.ModelSerializer):
+    convocados = serializers.PrimaryKeyRelatedField(many=True, queryset=Jugador.objects.all(), required=False)
+    convocados_detalle = JugadorSerializer(source='convocados', many=True, read_only=True)
+    fecha_str = serializers.SerializerMethodField()
+    condicion_display = serializers.CharField(source='get_condicion_display', read_only=True)
+    
+    class Meta:
+        model = Partido
+        fields = [
+            'id', 'fecha', 'fecha_str', 'rival', 'condicion', 'condicion_display',
+            'convocados', 'convocados_detalle'
+        ]
+    
+    def get_fecha_str(self, obj):
+        return obj.fecha.strftime("%d/%m/%Y")
+    
+    def validate_convocados(self, value):
+        if len(value) > 22:
+            raise serializers.ValidationError("No se pueden convocar más de 22 jugadores para un partido.")
+        return value
+
 class ChecklistPostPartidoSerializer(serializers.ModelSerializer):
     jugador_nombre = serializers.CharField(source='jugador.__str__', read_only=True)
     realizado_por_nombre = serializers.CharField(source='realizado_por.get_full_name', read_only=True)
+    partido_detalle = PartidoSerializer(source='partido', read_only=True)
+    fecha_partido = serializers.DateField(source='partido.fecha', read_only=True)
+    rival_partido = serializers.CharField(source='partido.rival', read_only=True)
     
     class Meta:
         model = ChecklistPostPartido
-        fields = '__all__'
+        fields = [
+            'id', 'jugador', 'jugador_nombre', 'partido', 'partido_detalle',
+            'fecha_partido', 'rival_partido', 'realizado_por', 'realizado_por_nombre',
+            'dolor_molestia', 'intensidad_dolor', 'mecanismo_dolor_evaluado',
+            'momento_aparicion_molestia', 'zona_anatomica_dolor',
+            'diagnostico_presuntivo_postpartido', 'tratamiento_inmediato_realizado',
+            'observaciones_checklist', 'fecha_registro_checklist'
+        ]
+    
+    def validate(self, data):
+        """Validar que el jugador esté convocado para el partido"""
+        jugador = data.get('jugador')
+        partido = data.get('partido')
+        
+        if jugador and partido:
+            if jugador not in partido.convocados.all():
+                raise serializers.ValidationError(
+                    "El jugador debe estar convocado para el partido antes de poder completar el checklist."
+                )
+        
+        return data
 
 class EstadoDiarioLesionSerializer(serializers.ModelSerializer):
     registrado_por_nombre = serializers.CharField(source='registrado_por.get_full_name', read_only=True)

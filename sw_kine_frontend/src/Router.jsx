@@ -15,6 +15,9 @@ import LesionesPage from './pages/LesionesPage';
 import NuevaLesionPage from './pages/NuevaLesionPage';
 import HistorialLesionesPage from './pages/HistorialLesionesPage';
 import HistorialChecklistsPage from './pages/HistorialChecklistsPage';
+import PartidosListPage from './pages/PartidosListPage';
+import GestionarConvocatoriaPage from './pages/GestionarConvocatoriaPage';
+import RealizarChecklistPage from './pages/RealizarChecklistPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const Router = () => {
@@ -60,7 +63,25 @@ const Router = () => {
             <AtencionesPage />
           </ProtectedRoute>
         } />
-        {/* Nueva ruta para Checklist Post-Partido */}
+        {/* Nueva ruta para Partidos y Checklists */}
+        <Route path="partidos">
+          <Route index element={
+            <ProtectedRoute>
+              <PartidosListPage />
+            </ProtectedRoute>
+          } />
+          <Route path=":partidoId/convocatoria" element={
+            <ProtectedRoute>
+              <GestionarConvocatoriaPage />
+            </ProtectedRoute>
+          } />
+          <Route path=":partidoId/checklist" element={
+            <ProtectedRoute>
+              <RealizarChecklistPage />
+            </ProtectedRoute>
+          } />
+        </Route>
+        {/* Nueva ruta para Checklist Post-Partido (mantener para compatibilidad) */}
         <Route path="checklist-post-partido">
           <Route path="nuevo" element={
             <ProtectedRoute>

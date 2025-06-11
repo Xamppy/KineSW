@@ -9,13 +9,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from .models import (
     Division, Jugador, AtencionKinesica, 
-    Lesion, ArchivoMedico, ChecklistPostPartido,
+    Lesion, ArchivoMedico, ChecklistPostPartido, Partido,
     EstadoDiarioLesion
 )
 from .serializers import (
     DivisionSerializer, JugadorSerializer, 
     AtencionKinesicaSerializer, LesionSerializer,
-    ArchivoMedicoSerializer, ChecklistPostPartidoSerializer,
+    ArchivoMedicoSerializer, ChecklistPostPartidoSerializer, PartidoSerializer,
     UserRegistrationSerializer, UserLoginSerializer, UserBasicSerializer,
     UserSerializer, EstadoDiarioLesionSerializer, LesionActivaSerializer
 )
@@ -207,35 +207,165 @@ class ArchivoMedicoViewSet(viewsets.ModelViewSet):
         context.update({'request': self.request})
         return context
 
+class PartidoViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint para ver y editar partidos
+    """
+    queryset = Partido.objects.all().prefetch_related('convocados').order_by('-fecha')
+    serializer_class = PartidoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['condicion', 'fecha']
+    search_fields = ['rival']
+    ordering_fields = ['fecha', 'rival']
+    
+    def get_queryset(self):
+        """
+        Permite filtrar por fecha y condición
+        """
+        queryset = Partido.objects.all().prefetch_related('convocados').order_by('-fecha')
+        fecha_desde = self.request.query_params.get('fecha_desde', None)
+        fecha_hasta = self.request.query_params.get('fecha_hasta', None)
+        condicion = self.request.query_params.get('condicion', None)
+        
+        if fecha_desde:
+            queryset = queryset.filter(fecha__gte=fecha_desde)
+        if fecha_hasta:
+            queryset = queryset.filter(fecha__lte=fecha_hasta)
+        if condicion:
+            queryset = queryset.filter(condicion=condicion)
+            
+        return queryset
+    
+    def get_serializer_context(self):
+        """
+        Añadir el request al contexto para generar URLs absolutas
+        """
+        context = super().get_serializer_context()
+        context.update({'request': self.request})
+        return context
+    
+    @action(detail=True, methods=['get'])
+    def convocados(self, request, pk=None):
+        """
+        Obtiene los jugadores convocados para un partido específico
+        """
+        partido = self.get_object()
+        convocados = partido.convocados.all()
+        serializer = JugadorSerializer(convocados, many=True, context={'request': request})
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def convocar_jugador(self, request, pk=None):
+        """
+        Convoca un jugador para el partido
+        """
+        partido = self.get_object()
+        jugador_id = request.data.get('jugador_id')
+        
+        try:
+            jugador = Jugador.objects.get(id=jugador_id)
+            
+            # Verificar que no se excedan los 22 jugadores
+            if partido.convocados.count() >= 22:
+                return Response({
+                    'error': 'No se pueden convocar más de 22 jugadores para un partido'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            partido.convocados.add(jugador)
+            return Response({
+                'message': f'Jugador {jugador} convocado exitosamente'
+            }, status=status.HTTP_200_OK)
+            
+        except Jugador.DoesNotExist:
+            return Response({
+                'error': 'Jugador no encontrado'
+            }, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['post'])
+    def quitar_convocatoria(self, request, pk=None):
+        """
+        Quita la convocatoria de un jugador para el partido
+        """
+        partido = self.get_object()
+        jugador_id = request.data.get('jugador_id')
+        
+        try:
+            jugador = Jugador.objects.get(id=jugador_id)
+            partido.convocados.remove(jugador)
+            return Response({
+                'message': f'Convocatoria de {jugador} retirada exitosamente'
+            }, status=status.HTTP_200_OK)
+            
+        except Jugador.DoesNotExist:
+            return Response({
+                'error': 'Jugador no encontrado'
+            }, status=status.HTTP_404_NOT_FOUND)
+
 class ChecklistPostPartidoViewSet(viewsets.ModelViewSet):
     """
     API endpoint para ver y editar checklists post-partido
     """
-    queryset = ChecklistPostPartido.objects.all().select_related('jugador', 'realizado_por').order_by('-fecha_partido_evaluado')
+    queryset = ChecklistPostPartido.objects.all().select_related('jugador', 'realizado_por', 'partido').order_by('-partido__fecha')
     serializer_class = ChecklistPostPartidoSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = [
-        'jugador', 'realizado_por', 'dolor_molestia', 'intensidad_dolor',
+        'jugador', 'partido', 'realizado_por', 'dolor_molestia', 'intensidad_dolor',
         'zona_anatomica_dolor', 'mecanismo_dolor_evaluado', 'momento_aparicion_molestia'
     ]
-    search_fields = ['rival', 'diagnostico_presuntivo_postpartido', 'jugador__nombres', 'jugador__apellidos']
-    ordering_fields = ['fecha_partido_evaluado', 'jugador__apellidos', 'dolor_molestia']
+    search_fields = ['partido__rival', 'diagnostico_presuntivo_postpartido', 'jugador__nombres', 'jugador__apellidos']
+    ordering_fields = ['partido__fecha', 'jugador__apellidos', 'dolor_molestia']
     
     def get_queryset(self):
         """
-        Permite filtrar por jugador y fecha
+        Permite filtrar por jugador, partido y dolor
         """
-        queryset = ChecklistPostPartido.objects.all().select_related('jugador', 'realizado_por').order_by('-fecha_partido_evaluado')
+        queryset = ChecklistPostPartido.objects.all().select_related('jugador', 'realizado_por', 'partido').order_by('-partido__fecha')
         jugador = self.request.query_params.get('jugador', None)
+        partido = self.request.query_params.get('partido', None)
         dolor = self.request.query_params.get('dolor_molestia', None)
         
         if jugador is not None:
             queryset = queryset.filter(jugador=jugador)
+        if partido is not None:
+            queryset = queryset.filter(partido=partido)
         if dolor is not None:
             queryset = queryset.filter(dolor_molestia=(dolor.lower() == 'true'))
             
         return queryset
+    
+    def perform_create(self, serializer):
+        """
+        Asigna automáticamente el usuario que realiza el checklist
+        """
+        serializer.save(realizado_por=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def por_partido(self, request):
+        """
+        Obtiene todos los checklists agrupados por partido
+        """
+        partido_id = request.query_params.get('partido_id')
+        if not partido_id:
+            return Response({
+                'error': 'Se requiere el parámetro partido_id'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            partido = Partido.objects.get(id=partido_id)
+            checklists = ChecklistPostPartido.objects.filter(partido=partido).select_related('jugador')
+            serializer = ChecklistPostPartidoSerializer(checklists, many=True, context={'request': request})
+            
+            return Response({
+                'partido': PartidoSerializer(partido, context={'request': request}).data,
+                'checklists': serializer.data
+            })
+            
+        except Partido.DoesNotExist:
+            return Response({
+                'error': 'Partido no encontrado'
+            }, status=status.HTTP_404_NOT_FOUND)
 
 class EstadoDiarioLesionViewSet(viewsets.ModelViewSet):
     """

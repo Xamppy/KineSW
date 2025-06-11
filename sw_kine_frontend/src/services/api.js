@@ -1780,5 +1780,370 @@ export const getAllLesionesPorJugador = async (jugadorId) => {
   }
 };
 
+// =====================================
+// === FUNCIONES PARA PARTIDOS ===
+// =====================================
+
+/**
+ * Obtiene todos los partidos
+ * @param {Object} params - Parámetros de filtrado (fecha_desde, fecha_hasta, condicion)
+ * @returns {Promise} - Promesa con la lista de partidos
+ */
+export const getPartidos = async (params = {}) => {
+  try {
+    console.log('getPartidos llamado con parámetros:', params);
+    
+    // Si estamos en modo desarrollo, devolver datos simulados
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para getPartidos');
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Datos simulados de partidos
+      const partidosSimulados = [
+        {
+          id: 1,
+          fecha: '2024-12-15',
+          fecha_str: '15/12/2024',
+          rival: 'Universidad de Chile',
+          condicion: 'local',
+          condicion_display: 'Local',
+          convocados: [1, 2, 3, 4, 5],
+          convocados_detalle: MOCK_DATA.jugadores.slice(0, 5)
+        },
+        {
+          id: 2,
+          fecha: '2024-12-08',
+          fecha_str: '08/12/2024',
+          rival: 'Colo-Colo',
+          condicion: 'visitante',
+          condicion_display: 'Visitante',
+          convocados: [1, 2, 3],
+          convocados_detalle: MOCK_DATA.jugadores.slice(0, 3)
+        },
+        {
+          id: 3,
+          fecha: '2024-12-01',
+          fecha_str: '01/12/2024',
+          rival: 'Universidad Católica',
+          condicion: 'local',
+          condicion_display: 'Local',
+          convocados: [2, 3, 4, 5],
+          convocados_detalle: MOCK_DATA.jugadores.slice(1, 5)
+        }
+      ];
+      
+      return partidosSimulados;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log('Realizando petición real a /partidos/');
+    const response = await api.get('/partidos/', { params });
+    console.log('Respuesta de partidos:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener partidos:', error);
+    if (error.response?.status === 401) {
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Obtiene un partido específico por ID
+ * @param {number} partidoId - ID del partido
+ * @returns {Promise} - Promesa con los datos del partido
+ */
+export const getPartidoById = async (partidoId) => {
+  try {
+    console.log(`getPartidoById llamado para ID: ${partidoId}`);
+    
+    // Si estamos en modo desarrollo, devolver datos simulados
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para getPartidoById');
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Buscar partido simulado
+      const partido = {
+        id: parseInt(partidoId),
+        fecha: '2024-12-15',
+        fecha_str: '15/12/2024',
+        rival: 'Universidad de Chile',
+        condicion: 'local',
+        condicion_display: 'Local',
+        convocados: [1, 2, 3, 4, 5],
+        convocados_detalle: MOCK_DATA.jugadores.slice(0, 5)
+      };
+      
+      return partido;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log(`Realizando petición real a /partidos/${partidoId}/`);
+    const response = await api.get(`/partidos/${partidoId}/`);
+    console.log('Respuesta del partido:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Error al obtener partido ${partidoId}:`, error);
+    if (error.response?.status === 401) {
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Crea un nuevo partido
+ * @param {Object} partidoData - Datos del partido (fecha, rival, condicion)
+ * @returns {Promise} - Promesa con el partido creado
+ */
+export const createPartido = async (partidoData) => {
+  try {
+    console.log('createPartido llamado con datos:', partidoData);
+    
+    // Si estamos en modo desarrollo, simular la creación
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para createPartido');
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const nuevoPartido = {
+        id: Date.now(), // ID temporal
+        ...partidoData,
+        fecha_str: new Date(partidoData.fecha).toLocaleDateString('es-CL'),
+        condicion_display: partidoData.condicion === 'local' ? 'Local' : 'Visitante',
+        convocados: [],
+        convocados_detalle: []
+      };
+      
+      console.log('Partido creado:', nuevoPartido);
+      return nuevoPartido;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log('Realizando petición real a /partidos/');
+    const response = await api.post('/partidos/', partidoData);
+    console.log('Respuesta de creación de partido:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error al crear partido:', error);
+    if (error.response?.status === 401) {
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Actualiza la convocatoria de un partido
+ * @param {number} partidoId - ID del partido
+ * @param {Array} jugadoresIds - Array de IDs de jugadores convocados
+ * @returns {Promise} - Promesa con el resultado de la actualización
+ */
+export const updateConvocatoria = async (partidoId, jugadoresIds) => {
+  try {
+    console.log(`updateConvocatoria llamado para partido ${partidoId} con jugadores:`, jugadoresIds);
+    
+    // Si estamos en modo desarrollo, simular la actualización
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para updateConvocatoria');
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('Convocatoria actualizada exitosamente');
+      return {
+        message: 'Convocatoria actualizada exitosamente',
+        convocados_count: jugadoresIds.length
+      };
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log(`Realizando petición real a /partidos/${partidoId}/`);
+    const response = await api.patch(`/partidos/${partidoId}/`, {
+      convocados: jugadoresIds
+    });
+    console.log('Respuesta de actualización de convocatoria:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Error al actualizar convocatoria del partido ${partidoId}:`, error);
+    if (error.response?.status === 401) {
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Obtiene los jugadores convocados para un partido específico
+ * @param {number} partidoId - ID del partido
+ * @returns {Promise} - Promesa con la lista de jugadores convocados
+ */
+export const getConvocados = async (partidoId) => {
+  try {
+    console.log(`getConvocados llamado para partido ${partidoId}`);
+    
+    // Si estamos en modo desarrollo, devolver datos simulados
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para getConvocados');
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      // Simular convocados
+      const convocados = MOCK_DATA.jugadores.slice(0, 5);
+      
+      return convocados;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log(`Realizando petición real a /partidos/${partidoId}/convocados/`);
+    const response = await api.get(`/partidos/${partidoId}/convocados/`);
+    console.log('Respuesta de convocados:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Error al obtener convocados del partido ${partidoId}:`, error);
+    if (error.response?.status === 401) {
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Crea un nuevo checklist post-partido (versión actualizada para el nuevo flujo)
+ * @param {Object} checklistData - Datos del checklist incluyendo partidoId
+ * @returns {Promise} - Promesa con el checklist creado
+ */
+export const createChecklistPartido = async (checklistData) => {
+  try {
+    console.log('createChecklistPartido llamado con datos:', checklistData);
+    
+    // Si estamos en modo desarrollo, simular la creación
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para createChecklistPartido');
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const nuevoChecklist = {
+        id: Date.now(),
+        ...checklistData,
+        fecha_registro_checklist: new Date().toISOString(),
+        jugador_nombre: MOCK_DATA.jugadores.find(j => j.id === checklistData.jugador)?.nombres + ' ' + 
+                       MOCK_DATA.jugadores.find(j => j.id === checklistData.jugador)?.apellidos,
+        realizado_por_nombre: 'Dr. Kinesiólogo Demo'
+      };
+      
+      console.log('Checklist creado:', nuevoChecklist);
+      return nuevoChecklist;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log('Realizando petición real a /checklists/');
+    const response = await api.post('/checklists/', checklistData);
+    console.log('Respuesta de creación de checklist:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error al crear checklist:', error);
+    if (error.response?.status === 401) {
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Obtiene los checklists de un partido específico
+ * @param {number} partidoId - ID del partido
+ * @returns {Promise} - Promesa con los checklists del partido
+ */
+export const getChecklistsPorPartido = async (partidoId) => {
+  try {
+    console.log(`getChecklistsPorPartido llamado para partido ${partidoId}`);
+    
+    // Si estamos en modo desarrollo, devolver datos simulados
+    if (DEV_MODE_NO_AUTH) {
+      console.log('Usando datos simulados para getChecklistsPorPartido');
+      
+      // Simular retraso de red
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Simular checklists
+      const checklists = [
+        {
+          id: 1,
+          jugador: 1,
+          jugador_nombre: 'Kevin Andrés Valenzuela Rosales',
+          partido: parseInt(partidoId),
+          dolor_molestia: false,
+          observaciones_checklist: 'Sin molestias reportadas.',
+          fecha_registro_checklist: '2024-12-15T20:30:00.000Z'
+        },
+        {
+          id: 2,
+          jugador: 2,
+          jugador_nombre: 'Matías Ignacio González Rojas',
+          partido: parseInt(partidoId),
+          dolor_molestia: true,
+          intensidad_dolor: 'LEVE',
+          zona_anatomica_dolor: 'MUSLO',
+          observaciones_checklist: 'Molestia leve en muslo derecho.',
+          fecha_registro_checklist: '2024-12-15T20:35:00.000Z'
+        }
+      ];
+      
+      return checklists;
+    }
+    
+    // Si no estamos en modo desarrollo, hacer la petición real
+    console.log(`Realizando petición real a /checklists/por_partido/?partido_id=${partidoId}`);
+    const response = await api.get('/checklists/por_partido/', {
+      params: { partido_id: partidoId }
+    });
+    console.log('Respuesta de checklists por partido:', response.data);
+    
+    return response.data.checklists || response.data;
+  } catch (error) {
+    console.error(`Error al obtener checklists del partido ${partidoId}:`, error);
+    if (error.response?.status === 401) {
+      throw { 
+        message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
+        isAuthError: true
+      };
+    }
+    throw error.response?.data || error;
+  }
+};
+
 // Exportar la instancia api para casos personalizados
 export default api; 
