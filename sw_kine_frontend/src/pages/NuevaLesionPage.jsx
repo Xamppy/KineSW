@@ -7,9 +7,10 @@ const NuevaLesionPage = () => {
   
   // Opciones de gravedad predefinidas
   const opcionesGravedad = [
-    { value: 'leve', label: 'Leve (1-7 días)' },
+    { value: 'leve', label: 'Leve (1-3 días)' },
+    { value: 'menor', label: 'Menor (4-7 días)' },
     { value: 'moderada', label: 'Moderada (8-28 días)' },
-    { value: 'grave', label: 'Grave (+28 días)' }
+    { value: 'grave', label: 'Grave (29+ días)' }
   ];
 
   // Función para obtener colores de gravedad (igual que en EstadoLesionPage)
@@ -17,10 +18,12 @@ const NuevaLesionPage = () => {
     switch (gravedad) {
       case 'leve':
         return 'bg-green-100 text-green-800 border-green-200';
-      case 'moderada':
+      case 'menor':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'grave':
+      case 'moderada':
         return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'grave':
+        return 'bg-red-100 text-red-800 border-red-200';
       case 'severa':
         return 'bg-red-100 text-red-800 border-red-200';
       default:

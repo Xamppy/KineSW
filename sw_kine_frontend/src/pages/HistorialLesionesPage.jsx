@@ -189,10 +189,12 @@ const HistorialLesionesPage = () => {
     switch (gravedad) {
       case 'leve':
         return 'bg-green-100 text-green-800 border-green-200';
-      case 'moderada':
+      case 'menor':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'grave':
+      case 'moderada':
         return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'grave':
+        return 'bg-red-100 text-red-800 border-red-200';
       case 'severa':
         return 'bg-red-100 text-red-800 border-red-200';
       default:

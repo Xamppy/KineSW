@@ -225,9 +225,9 @@ const MOCK_DATA = {
       tipo_lesion_display: 'Ligamentosa',
       region_cuerpo: 'tobillo_der',
       region_cuerpo_display: 'Tobillo Derecho',
-      gravedad_lesion: 'leve',
-      gravedad_lesion_display: 'Leve (1-7 días)',
-      dias_recuperacion_estimados: 7,
+      gravedad_lesion: 'menor',
+      gravedad_lesion_display: 'Menor (4-7 días)',
+      dias_recuperacion_estimados: 6,
       historial_diario: [
         {
           id: 11,
@@ -329,7 +329,7 @@ const MOCK_DATA = {
       region_cuerpo: 'cuello',
       region_cuerpo_display: 'Cuello',
       gravedad_lesion: 'leve',
-      gravedad_lesion_display: 'Leve (1-7 días)',
+      gravedad_lesion_display: 'Leve (1-3 días)',
       dias_recuperacion_estimados: 7,
       dias_recuperacion_reales: 14
     },
@@ -351,7 +351,7 @@ const MOCK_DATA = {
       region_cuerpo: 'muslo_ant_izq',
       region_cuerpo_display: 'Muslo Anterior Izquierdo',
       gravedad_lesion: 'grave',
-      gravedad_lesion_display: 'Grave (+28 días)',
+      gravedad_lesion_display: 'Grave (29+ días)',
       dias_recuperacion_estimados: 35,
       dias_recuperacion_reales: 56
     }
@@ -1125,16 +1125,19 @@ export const createLesion = async (lesionData) => {
         // Gravedad con formato completo
         switch (lesionData.gravedad_lesion) {
           case 'leve':
-            displays.gravedad_lesion_display = 'Leve (1-7 días)';
+            displays.gravedad_lesion_display = 'Leve (1-3 días)';
+            break;
+          case 'menor':
+            displays.gravedad_lesion_display = 'Menor (4-7 días)';
             break;
           case 'moderada':
             displays.gravedad_lesion_display = 'Moderada (8-28 días)';
             break;
           case 'grave':
-            displays.gravedad_lesion_display = 'Grave (+28 días)';
+            displays.gravedad_lesion_display = 'Grave (29+ días)';
             break;
           case 'severa':
-            displays.gravedad_lesion_display = 'Severa (+28 días)';
+            displays.gravedad_lesion_display = 'Severa (29+ días)';
             break;
           default:
             displays.gravedad_lesion_display = lesionData.gravedad_lesion ? 
