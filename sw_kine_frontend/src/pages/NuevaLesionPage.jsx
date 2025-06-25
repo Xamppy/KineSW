@@ -5,12 +5,86 @@ import { getJugadores, createLesion } from '../services/api';
 const NuevaLesionPage = () => {
   const navigate = useNavigate();
   
-  // Opciones de gravedad predefinidas
+  // Opciones predefinidas (deben coincidir con el backend)
+  const opcionesTipoLesion = [
+    { value: 'muscular', label: 'Muscular' },
+    { value: 'ligamentosa', label: 'Ligamentosa' },
+    { value: 'osea', label: 'Ósea' },
+    { value: 'tendinosa', label: 'Tendinosa' },
+    { value: 'articular', label: 'Articular' },
+    { value: 'meniscal', label: 'Meniscal' },
+    { value: 'contusion', label: 'Contusión' },
+    { value: 'otra', label: 'Otra' }
+  ];
+
+  const opcionesRegionCuerpo = [
+    // Miembro inferior
+    { value: 'tobillo_izq', label: 'Tobillo Izquierdo' },
+    { value: 'tobillo_der', label: 'Tobillo Derecho' },
+    { value: 'rodilla_izq', label: 'Rodilla Izquierda' },
+    { value: 'rodilla_der', label: 'Rodilla Derecha' },
+    { value: 'cadera_izq', label: 'Cadera Izquierda' },
+    { value: 'cadera_der', label: 'Cadera Derecha' },
+    { value: 'muslo_ant_izq', label: 'Muslo Anterior Izquierdo' },
+    { value: 'muslo_ant_der', label: 'Muslo Anterior Derecho' },
+    { value: 'muslo_post_izq', label: 'Muslo Posterior Izquierdo' },
+    { value: 'muslo_post_der', label: 'Muslo Posterior Derecho' },
+    { value: 'pantorrilla_izq', label: 'Pantorrilla Izquierda' },
+    { value: 'pantorrilla_der', label: 'Pantorrilla Derecha' },
+    { value: 'pie_izq', label: 'Pie Izquierdo' },
+    { value: 'pie_der', label: 'Pie Derecho' },
+    // Miembro superior
+    { value: 'hombro_izq', label: 'Hombro Izquierdo' },
+    { value: 'hombro_der', label: 'Hombro Derecho' },
+    { value: 'codo_izq', label: 'Codo Izquierdo' },
+    { value: 'codo_der', label: 'Codo Derecho' },
+    { value: 'muneca_izq', label: 'Muñeca Izquierda' },
+    { value: 'muneca_der', label: 'Muñeca Derecha' },
+    { value: 'mano_izq', label: 'Mano Izquierda' },
+    { value: 'mano_der', label: 'Mano Derecha' },
+    // Tronco
+    { value: 'columna_cervical', label: 'Columna Cervical' },
+    { value: 'columna_dorsal', label: 'Columna Dorsal' },
+    { value: 'columna_lumbar', label: 'Columna Lumbar' },
+    { value: 'abdomen', label: 'Abdomen' },
+    { value: 'pelvis', label: 'Pelvis' },
+    // Cabeza
+    { value: 'cabeza', label: 'Cabeza' },
+    { value: 'facial', label: 'Región Facial' },
+    // Otro
+    { value: 'otra', label: 'Otra Región' }
+  ];
+
+  const opcionesMecanismoLesional = [
+    { value: 'contacto', label: 'Por contacto' },
+    { value: 'sin_contacto', label: 'Sin contacto' },
+    { value: 'sobrecarga', label: 'Sobrecarga' },
+    { value: 'traumatico', label: 'Traumático' },
+    { value: 'indirecto', label: 'Mecanismo indirecto' },
+    { value: 'otro', label: 'Otro mecanismo' }
+  ];
+
+  const opcionesCondicionLesion = [
+    { value: 'aguda', label: 'Aguda' },
+    { value: 'cronica', label: 'Crónica' },
+    { value: 'recidivante', label: 'Recidivante' },
+    { value: 'sobreaguda', label: 'Sobreaguda' }
+  ];
+
+  const opcionesEtapaDeportiva = [
+    { value: 'pretemporada', label: 'Pretemporada' },
+    { value: 'competencia', label: 'Competencia' },
+    { value: 'posttemporada', label: 'Posttemporada' },
+    { value: 'entrenamiento', label: 'Entrenamiento' },
+    { value: 'partido', label: 'Partido oficial' },
+    { value: 'amistoso', label: 'Partido amistoso' }
+  ];
+
   const opcionesGravedad = [
-    { value: 'leve', label: 'Leve (1-3 días)' },
-    { value: 'menor', label: 'Menor (4-7 días)' },
+    { value: 'leve', label: 'Leve (1-7 días)' },
     { value: 'moderada', label: 'Moderada (8-28 días)' },
-    { value: 'grave', label: 'Grave (29+ días)' }
+    { value: 'grave', label: 'Grave (> 28 días)' },
+    { value: 'severa', label: 'Severa (requiere cirugía)' }
   ];
 
   // Función para obtener colores de gravedad (igual que en EstadoLesionPage)
@@ -36,8 +110,11 @@ const NuevaLesionPage = () => {
     jugador: '',
     fecha_lesion: '',
     diagnostico_medico: '',
-    tipo_lesion: '', // TODO: Reemplazar con <select> y cargar opciones desde API o choices definidos
-    region_cuerpo: '', // TODO: Reemplazar con <select> y cargar opciones desde API o choices definidos
+    tipo_lesion: '',
+    region_cuerpo: '',
+    mecanismo_lesional: '',
+    condicion_lesion: '',
+    etapa_deportiva_lesion: '',
     gravedad_lesion: '',
     dias_recuperacion_estimados: ''
   });
@@ -95,6 +172,21 @@ const NuevaLesionPage = () => {
     }
     if (!formData.diagnostico_medico.trim()) {
       newErrors.diagnostico_medico = 'El diagnóstico médico es requerido';
+    }
+    if (!formData.tipo_lesion) {
+      newErrors.tipo_lesion = 'Debe seleccionar el tipo de lesión';
+    }
+    if (!formData.region_cuerpo) {
+      newErrors.region_cuerpo = 'Debe seleccionar la región del cuerpo';
+    }
+    if (!formData.mecanismo_lesional) {
+      newErrors.mecanismo_lesional = 'Debe seleccionar el mecanismo lesional';
+    }
+    if (!formData.condicion_lesion) {
+      newErrors.condicion_lesion = 'Debe seleccionar la condición de la lesión';
+    }
+    if (!formData.etapa_deportiva_lesion) {
+      newErrors.etapa_deportiva_lesion = 'Debe seleccionar la etapa deportiva';
     }
 
     setErrors(newErrors);
@@ -298,18 +390,28 @@ const NuevaLesionPage = () => {
                 {/* Tipo de Lesión */}
                 <div>
                   <label htmlFor="tipo_lesion" className="block text-sm font-medium text-gray-700 mb-2">
-                    Tipo de Lesión
+                    Tipo de Lesión *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="tipo_lesion"
                     name="tipo_lesion"
                     value={formData.tipo_lesion}
                     onChange={handleInputChange}
-                    placeholder="Ej: muscular, ligamentosa, ósea..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:border-transparent"
-                  />
-                  {/* TODO: Reemplazar con <select> y cargar opciones desde API o choices definidos */}
+                    required
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:border-transparent ${
+                      errors.tipo_lesion ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Seleccionar tipo de lesión...</option>
+                    {opcionesTipoLesion.map(opcion => (
+                      <option key={opcion.value} value={opcion.value}>
+                        {opcion.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.tipo_lesion && (
+                    <p className="mt-1 text-sm text-red-600">{errors.tipo_lesion}</p>
+                  )}
                 </div>
               </div>
 
@@ -318,18 +420,109 @@ const NuevaLesionPage = () => {
                 {/* Región del Cuerpo */}
                 <div>
                   <label htmlFor="region_cuerpo" className="block text-sm font-medium text-gray-700 mb-2">
-                    Región del Cuerpo
+                    Región del Cuerpo *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="region_cuerpo"
                     name="region_cuerpo"
                     value={formData.region_cuerpo}
                     onChange={handleInputChange}
-                    placeholder="Ej: muslo_post_izq, rodilla_der..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:border-transparent"
-                  />
-                  {/* TODO: Reemplazar con <select> y cargar opciones desde API o choices definidos */}
+                    required
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:border-transparent ${
+                      errors.region_cuerpo ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Seleccionar región del cuerpo...</option>
+                    {opcionesRegionCuerpo.map(opcion => (
+                      <option key={opcion.value} value={opcion.value}>
+                        {opcion.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.region_cuerpo && (
+                    <p className="mt-1 text-sm text-red-600">{errors.region_cuerpo}</p>
+                  )}
+                </div>
+
+                {/* Mecanismo Lesional */}
+                <div>
+                  <label htmlFor="mecanismo_lesional" className="block text-sm font-medium text-gray-700 mb-2">
+                    Mecanismo Lesional *
+                  </label>
+                  <select
+                    id="mecanismo_lesional"
+                    name="mecanismo_lesional"
+                    value={formData.mecanismo_lesional}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:border-transparent ${
+                      errors.mecanismo_lesional ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Seleccionar mecanismo lesional...</option>
+                    {opcionesMecanismoLesional.map(opcion => (
+                      <option key={opcion.value} value={opcion.value}>
+                        {opcion.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.mecanismo_lesional && (
+                    <p className="mt-1 text-sm text-red-600">{errors.mecanismo_lesional}</p>
+                  )}
+                </div>
+
+                {/* Condición de Lesión */}
+                <div>
+                  <label htmlFor="condicion_lesion" className="block text-sm font-medium text-gray-700 mb-2">
+                    Condición de Lesión *
+                  </label>
+                  <select
+                    id="condicion_lesion"
+                    name="condicion_lesion"
+                    value={formData.condicion_lesion}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:border-transparent ${
+                      errors.condicion_lesion ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Seleccionar condición de lesión...</option>
+                    {opcionesCondicionLesion.map(opcion => (
+                      <option key={opcion.value} value={opcion.value}>
+                        {opcion.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.condicion_lesion && (
+                    <p className="mt-1 text-sm text-red-600">{errors.condicion_lesion}</p>
+                  )}
+                </div>
+
+                {/* Etapa Deportiva */}
+                <div>
+                  <label htmlFor="etapa_deportiva_lesion" className="block text-sm font-medium text-gray-700 mb-2">
+                    Etapa Deportiva *
+                  </label>
+                  <select
+                    id="etapa_deportiva_lesion"
+                    name="etapa_deportiva_lesion"
+                    value={formData.etapa_deportiva_lesion}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:border-transparent ${
+                      errors.etapa_deportiva_lesion ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Seleccionar etapa deportiva...</option>
+                    {opcionesEtapaDeportiva.map(opcion => (
+                      <option key={opcion.value} value={opcion.value}>
+                        {opcion.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.etapa_deportiva_lesion && (
+                    <p className="mt-1 text-sm text-red-600">{errors.etapa_deportiva_lesion}</p>
+                  )}
                 </div>
 
                 {/* Gravedad de Lesión */}

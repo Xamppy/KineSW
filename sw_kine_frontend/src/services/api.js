@@ -328,11 +328,14 @@ export const getHistorialDiarioLesion = async (lesionId) => {
 export const createLesion = async (lesionData) => {
   try {
     console.log('Creando nueva lesión:', lesionData);
+    console.log('Datos enviados al backend:', JSON.stringify(lesionData, null, 2));
     const response = await api.post('/lesiones/', lesionData);
     console.log('Lesión creada exitosamente:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error al crear lesión:', error);
+    console.error('Detalles del error:', error.response?.data);
+    console.error('Status del error:', error.response?.status);
     if (error.response?.status === 401) {
       throw { 
         message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
