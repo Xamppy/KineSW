@@ -31,7 +31,7 @@ const FotoUpload = ({ jugadorId, onUploadSuccess, className = '' }) => {
       formData.append('foto_perfil', file);
 
       // Subir la foto
-      await uploadFotoJugador(jugadorId, formData);
+      const response = await uploadFotoJugador(jugadorId, formData);
 
       // Crear URL temporal para preview
       const previewUrl = URL.createObjectURL(file);

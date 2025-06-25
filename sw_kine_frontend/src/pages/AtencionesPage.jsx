@@ -20,9 +20,18 @@ const AtencionesPage = () => {
   const [selectedAtencionDetail, setSelectedAtencionDetail] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Función para obtener fecha/hora actual en formato datetime-local
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    // Ajustar a zona horaria local
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().slice(0, 16);
+  };
+
   // Estado para el formulario de nueva atención
   const [newAtencionData, setNewAtencionData] = useState({
-    fecha_atencion: new Date().toISOString().slice(0, 16), // Formato YYYY-MM-DDThh:mm
+    fecha_atencion: getCurrentDateTime(), // Formato YYYY-MM-DDThh:mm en hora local
     motivo_consulta: '',
     prestaciones_realizadas: '',
     estado_actual: '',
@@ -125,7 +134,7 @@ const AtencionesPage = () => {
       // Cerrar el modal y resetear el formulario
       setShowAddAtencionModal(false);
       setNewAtencionData({
-        fecha_atencion: new Date().toISOString().slice(0, 16),
+        fecha_atencion: getCurrentDateTime(),
         motivo_consulta: '',
         prestaciones_realizadas: '',
         estado_actual: '',
@@ -346,7 +355,7 @@ const AtencionesPage = () => {
         onClose={() => {
           setShowAddAtencionModal(false);
           setNewAtencionData({
-            fecha_atencion: new Date().toISOString().slice(0, 16),
+            fecha_atencion: getCurrentDateTime(),
             motivo_consulta: '',
             prestaciones_realizadas: '',
             estado_actual: '',

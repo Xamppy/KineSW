@@ -28,6 +28,65 @@ User = get_user_model()
 
 # Create your views here.
 
+class InformeLesionesView(APIView):
+    """
+    Vista para generar informes de lesiones en un rango de fechas específico
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        
+        if not start_date or not end_date:
+            return Response({
+                'error': 'Los parámetros start_date y end_date son requeridos'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Consultar nuevas lesiones en el rango de fechas
+            nuevas_lesiones = Lesion.objects.filter(
+                fecha_lesion__range=[start_date, end_date]
+            ).select_related('jugador').order_by('fecha_lesion')
+            
+            # Consultar lesiones finalizadas en el rango de fechas
+            lesiones_finalizadas = Lesion.objects.filter(
+                fecha_fin__range=[start_date, end_date]
+            ).select_related('jugador').order_by('fecha_fin')
+            
+            # Consultar cambios de estado diarios en el rango de fechas
+            cambios_diarios = EstadoDiarioLesion.objects.filter(
+                fecha__range=[start_date, end_date]
+            ).select_related('lesion__jugador', 'registrado_por').order_by('fecha')
+            
+            # Serializar los datos
+            nuevas_lesiones_data = LesionSerializer(nuevas_lesiones, many=True, context={'request': request}).data
+            lesiones_finalizadas_data = LesionSerializer(lesiones_finalizadas, many=True, context={'request': request}).data
+            cambios_diarios_data = EstadoDiarioLesionSerializer(cambios_diarios, many=True, context={'request': request}).data
+            
+            # Preparar respuesta estructurada
+            response_data = {
+                'periodo': {
+                    'inicio': start_date,
+                    'fin': end_date
+                },
+                'nuevas_lesiones': nuevas_lesiones_data,
+                'lesiones_finalizadas': lesiones_finalizadas_data,
+                'cambios_diarios': cambios_diarios_data,
+                'resumen': {
+                    'total_nuevas_lesiones': len(nuevas_lesiones_data),
+                    'total_lesiones_finalizadas': len(lesiones_finalizadas_data),
+                    'total_cambios_diarios': len(cambios_diarios_data)
+                }
+            }
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'error': f'Error al generar el informe: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 # Vistas para la API REST
 class DivisionViewSet(viewsets.ModelViewSet):
     """
@@ -80,6 +139,30 @@ class JugadorViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context.update({'request': self.request})
         return context
+    
+    @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser])
+    def upload_foto(self, request, pk=None):
+        """
+        Endpoint personalizado para subir foto de perfil
+        """
+        jugador = self.get_object()
+        
+        if 'foto_perfil' not in request.FILES:
+            return Response({
+                'error': 'No se ha enviado ningún archivo'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Actualizar la foto del jugador
+        jugador.foto_perfil = request.FILES['foto_perfil']
+        jugador.save()
+        
+        # Serializar el jugador actualizado
+        serializer = self.get_serializer(jugador, context={'request': request})
+        
+        return Response({
+            'message': 'Foto subida exitosamente',
+            'jugador': serializer.data
+        }, status=status.HTTP_200_OK)
 
 class AtencionKinesicaViewSet(viewsets.ModelViewSet):
     """

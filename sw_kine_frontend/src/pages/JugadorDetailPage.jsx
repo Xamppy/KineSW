@@ -2,14 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getJugadorById } from '../services/api';
 import FotoUpload from '../components/jugador/FotoUpload';
+import ImageEditor from '../components/jugador/ImageEditor';
 import playerPlaceholder from '../assets/images/logo-sw.png';
-
-// Importar las imágenes
-import doueImg from '../assets/images/Doue.webp';
-import gulerImg from '../assets/images/Guler.webp';
-import hakimiImg from '../assets/images/Hakimi.jpg';
-import yamalImg from '../assets/images/Yamal.jpeg';
-import kvaraImg from '../assets/images/Kvara.jpeg';
 
 const JugadorDetailPage = () => {
   const { jugadorId } = useParams();
@@ -19,6 +13,8 @@ const JugadorDetailPage = () => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState(null);
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [imageSettings, setImageSettings] = useState({ position: { x: 50, y: 50 }, scale: 1 });
 
   const fetchJugadorData = async () => {
     try {
@@ -37,29 +33,64 @@ const JugadorDetailPage = () => {
     fetchJugadorData();
   }, [jugadorId]);
 
-  const handleUploadSuccess = (previewUrl) => {
+  const handleUploadSuccess = async (previewUrl) => {
     setTempImageUrl(previewUrl);
     setImageError(false);
     setImageLoaded(true);
+    
+    // Recargar los datos del jugador para obtener la nueva URL de la foto
+    await fetchJugadorData();
+    
+    // Resetear configuración de imagen
+    setImageSettings({ position: { x: 50, y: 50 }, scale: 1 });
+    
+    // Limpiar la imagen temporal después de un momento para mostrar la nueva foto
+    setTimeout(() => {
+      setTempImageUrl(null);
+    }, 1000);
   };
+
+  // Manejar apertura del editor de imagen
+  const handleEditImage = () => {
+    const imageUrl = getImageUrl();
+    if (imageUrl && imageUrl !== playerPlaceholder) {
+      setShowImageEditor(true);
+    }
+  };
+
+  // Manejar guardado de configuración de imagen
+  const handleSaveImageSettings = (newSettings) => {
+    setImageSettings(newSettings);
+    setShowImageEditor(false);
+    // Aquí podrías guardar las configuraciones en localStorage o enviarlas al backend
+    localStorage.setItem(`image-settings-${jugadorId}`, JSON.stringify(newSettings));
+  };
+
+  // Manejar cancelación del editor
+  const handleCancelImageEdit = () => {
+    setShowImageEditor(false);
+  };
+
+  // Cargar configuraciones guardadas
+  useEffect(() => {
+    const savedSettings = localStorage.getItem(`image-settings-${jugadorId}`);
+    if (savedSettings) {
+      setImageSettings(JSON.parse(savedSettings));
+    }
+  }, [jugadorId]);
 
   // Función para obtener la URL de la imagen
   const getImageUrl = () => {
+    // Si hay una imagen temporal (recién subida), mostrarla
     if (tempImageUrl) return tempImageUrl;
-    if (!jugador?.foto_perfil_url) return playerPlaceholder;
     
-    // Mapeo de nombres de archivo a imágenes importadas
-    const imageMap = {
-      'Doue.webp': doueImg,
-      'Guler.webp': gulerImg,
-      'Hakimi.jpg': hakimiImg,
-      'Yamal.jpeg': yamalImg,
-      'Kvara.jpeg': kvaraImg
-    };
-
-    // Obtener el nombre del archivo de la ruta
-    const fileName = jugador.foto_perfil_url.split('/').pop();
-    return imageMap[fileName] || playerPlaceholder;
+    // Si hay foto_perfil_url del backend, mostrarla directamente
+    if (jugador?.foto_perfil_url) {
+      return jugador.foto_perfil_url;
+    }
+    
+    // Si no hay foto, mostrar placeholder
+    return playerPlaceholder;
   };
 
   // Limpiar la URL temporal al desmontar el componente
@@ -109,7 +140,7 @@ const JugadorDetailPage = () => {
           <div className="md:w-1/3 border-r border-gray-200">
             <div className="p-8">
               {/* Contenedor de la Foto */}
-              <div className="relative aspect-square mb-6 bg-gray-100 rounded-lg overflow-hidden">
+              <div className="relative aspect-square mb-6 bg-gray-100 rounded-lg overflow-hidden group">
                 {!imageLoaded && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-8 h-8 border-2 border-wanderers-green border-t-transparent rounded-full animate-spin"></div>
@@ -119,12 +150,29 @@ const JugadorDetailPage = () => {
                   src={imageError ? playerPlaceholder : getImageUrl()}
                   alt={`Foto de ${jugador.nombres} ${jugador.apellidos}`}
                   className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  style={{
+                    transform: `scale(${imageSettings.scale})`,
+                    objectPosition: `${imageSettings.position.x}% ${imageSettings.position.y}%`
+                  }}
                   onError={() => {
                     setImageError(true);
                     setImageLoaded(true);
                   }}
                   onLoad={() => setImageLoaded(true)}
                 />
+                
+                {/* Botón de edición que aparece al hacer hover */}
+                {!imageError && getImageUrl() !== playerPlaceholder && (
+                  <button
+                    onClick={handleEditImage}
+                    className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-opacity-70"
+                    title="Editar posición de la imagen"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                )}
               </div>
 
               {/* Componente de Upload */}
@@ -161,7 +209,7 @@ const JugadorDetailPage = () => {
               <div className="space-y-6">
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-sm font-medium text-gray-500">Fecha de Nacimiento</p>
-                  <p className="mt-1 text-gray-900">{new Date(jugador.fecha_nacimiento).toLocaleDateString()}</p>
+                  <p className="mt-1 text-gray-900">{new Date(jugador.fecha_nacimiento + 'T00:00:00').toLocaleDateString('es-CL')}</p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-sm font-medium text-gray-500">Edad</p>
@@ -173,7 +221,7 @@ const JugadorDetailPage = () => {
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-sm font-medium text-gray-500">Lateralidad</p>
-                  <p className="mt-1 text-gray-900">{jugador.lateralidad}</p>
+                  <p className="mt-1 text-gray-900">{jugador.lateralidad?.charAt(0).toUpperCase() + jugador.lateralidad?.slice(1) || 'No especificada'}</p>
                 </div>
               </div>
               <div className="space-y-6">
@@ -191,13 +239,21 @@ const JugadorDetailPage = () => {
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-sm font-medium text-gray-500">Previsión de Salud</p>
-                  <p className="mt-1 text-gray-900">{jugador.prevision_salud}</p>
+                  <p className="mt-1 text-gray-900">{jugador.prevision_salud?.toUpperCase() || 'No especificada'}</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Editor de imagen */}
+      <ImageEditor
+        imageUrl={getImageUrl()}
+        onSave={handleSaveImageSettings}
+        onCancel={handleCancelImageEdit}
+        isOpen={showImageEditor}
+      />
     </div>
   );
 };

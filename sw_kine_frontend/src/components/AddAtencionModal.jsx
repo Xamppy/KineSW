@@ -25,29 +25,32 @@ const AddAtencionModal = ({
     }));
   };
 
-  // Estados predefinidos para el select
+  // Estados predefinidos para el select (deben coincidir con el backend)
   const ESTADOS_ATENCION = [
-    'En evaluación',
-    'En tratamiento',
-    'En recuperación',
-    'Alta médica',
-    'Derivado a especialista',
-    'Óptimo para competencia',
-    'Requiere seguimiento',
-    'No apto para competencia'
+    { value: 'tratamiento', label: 'En tratamiento' },
+    { value: 'alta', label: 'Alta médica' },
+    { value: 'derivado', label: 'Derivado a especialista' },
+    { value: 'control', label: 'Control periódico' },
+    { value: 'otro', label: 'Otro' }
   ];
 
-  // Convertir fecha a formato datetime-local
+  // Convertir fecha a formato datetime-local considerando zona horaria de Chile
   const formatDateForInput = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toISOString().slice(0, 16); // Formato YYYY-MM-DDThh:mm
+    // Ajustar a zona horaria de Chile (UTC-3 o UTC-4 según DST)
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().slice(0, 16); // Formato YYYY-MM-DDThh:mm
   };
 
-  // Convertir datetime-local a formato de fecha para el backend
+  // Convertir datetime-local a formato ISO para el backend
   const formatDateForBackend = (dateTimeString) => {
     if (!dateTimeString) return '';
-    return dateTimeString.split('T')[0]; // Obtener solo la fecha YYYY-MM-DD
+    // Crear fecha desde el input datetime-local (que está en hora local)
+    const localDate = new Date(dateTimeString);
+    // Convertir a ISO manteniendo la hora local como si fuera UTC
+    return localDate.toISOString();
   };
 
   const handleSubmit = (e) => {
@@ -179,8 +182,8 @@ const AddAtencionModal = ({
               >
                 <option value="">Seleccione un estado</option>
                 {ESTADOS_ATENCION.map(estado => (
-                  <option key={estado} value={estado}>
-                    {estado}
+                  <option key={estado.value} value={estado.value}>
+                    {estado.label}
                   </option>
                 ))}
               </select>

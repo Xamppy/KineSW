@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { getJugadores, getAllLesionesPorJugador, getHistorialDiarioLesion } from '../services/api';
+import { getJugadores, getAllLesionesPorJugador, getHistorialDiarioLesion, getDatosInformeLesiones } from '../services/api';
 import HistorialLesionGraph from '../components/HistorialLesionGraph';
+import InformeTemplate from '../components/informes/InformeTemplate';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const HistorialLesionesPage = () => {
   // Estados principales
@@ -17,6 +20,13 @@ const HistorialLesionesPage = () => {
   const [loadingHistorial, setLoadingHistorial] = useState(false);
   const [error, setError] = useState(null);
   const [errorType, setErrorType] = useState(null); // 'jugadores' | 'lesiones' | 'historial'
+
+  // Estados para el modal de informes
+  const [showInformeModal, setShowInformeModal] = useState(false);
+  const [tipoInforme, setTipoInforme] = useState('diario');
+  const [fechaReferencia, setFechaReferencia] = useState(new Date().toISOString().split('T')[0]);
+  const [loadingInforme, setLoadingInforme] = useState(false);
+  const [datosParaInforme, setDatosParaInforme] = useState(null);
 
   // Cargar jugadores al montar el componente
   useEffect(() => {
@@ -202,6 +212,646 @@ const HistorialLesionesPage = () => {
     }
   };
 
+  // Funciones para manejo de informes
+  const calcularRangoFechas = (tipo, fecha) => {
+    const fechaRef = new Date(fecha);
+    let startDate, endDate;
+
+    switch (tipo) {
+      case 'diario':
+        startDate = new Date(fechaRef);
+        endDate = new Date(fechaRef);
+        break;
+      case 'semanal':
+        startDate = new Date(fechaRef);
+        startDate.setDate(fechaRef.getDate() - fechaRef.getDay()); // Inicio de semana (domingo)
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6); // Fin de semana (sábado)
+        break;
+      case 'mensual':
+        startDate = new Date(fechaRef.getFullYear(), fechaRef.getMonth(), 1);
+        endDate = new Date(fechaRef.getFullYear(), fechaRef.getMonth() + 1, 0);
+        break;
+      case 'anual':
+        startDate = new Date(fechaRef.getFullYear(), 0, 1);
+        endDate = new Date(fechaRef.getFullYear(), 11, 31);
+        break;
+      default:
+        startDate = endDate = new Date(fechaRef);
+    }
+
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0]
+    };
+  };
+
+  const handleGenerarInforme = async () => {
+    try {
+      setLoadingInforme(true);
+      const { startDate, endDate } = calcularRangoFechas(tipoInforme, fechaReferencia);
+      
+      console.log('Generando informe:', { tipoInforme, fechaReferencia, startDate, endDate });
+      
+      const datos = await getDatosInformeLesiones(startDate, endDate);
+      console.log('Datos del informe obtenidos:', datos);
+      
+      setDatosParaInforme(datos);
+      setShowInformeModal(false);
+    } catch (error) {
+      console.error('Error al generar informe:', error);
+      alert('Error al generar el informe. Por favor, intenta nuevamente.');
+    } finally {
+      setLoadingInforme(false);
+    }
+  };
+
+  // useEffect para generar PDF cuando cambien los datos del informe
+  useEffect(() => {
+    const generarPDF = async () => {
+      if (!datosParaInforme) return;
+
+      try {
+        console.log('Generando PDF nativo optimizado para impresión...');
+        
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        
+        // Dimensiones y configuración
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 20;
+        const contentWidth = pageWidth - (margin * 2);
+        let currentY = margin;
+        let pageNumber = 1;
+        
+        // Función para añadir nueva página
+        const addNewPage = () => {
+          pdf.addPage();
+          pageNumber++;
+          currentY = margin;
+          
+          // Encabezado en páginas adicionales
+          pdf.setFontSize(8);
+          pdf.setTextColor(100);
+          pdf.text('Santiago Wanderers - Informe de Lesionados', margin, 15);
+          
+          // Número de página
+          pdf.setFontSize(8);
+          pdf.setTextColor(120);
+          pdf.text(`Página ${pageNumber}`, pageWidth - margin - 20, pageHeight - 10);
+          
+          currentY = 25;
+        };
+        
+        // Función para verificar espacio y añadir página si es necesario
+        const checkPageSpace = (requiredSpace) => {
+          if (currentY + requiredSpace > pageHeight - margin - 15) {
+            addNewPage();
+          }
+        };
+        
+        // ENCABEZADO CON LOGO
+        // Añadir logo si está disponible
+        try {
+          // Crear canvas temporal para convertir la imagen
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const logoImg = new Image();
+          
+          // Intentar cargar el logo
+          await new Promise((resolve, reject) => {
+            logoImg.onload = () => {
+              canvas.width = logoImg.width;
+              canvas.height = logoImg.height;
+              ctx.drawImage(logoImg, 0, 0);
+              
+              // Convertir a base64 y añadir al PDF
+              const imgData = canvas.toDataURL('image/png');
+              pdf.addImage(imgData, 'PNG', margin, currentY, 16, 16);
+              resolve();
+            };
+            logoImg.onerror = () => reject(new Error('No se pudo cargar el logo'));
+            logoImg.src = '/logo-sw.png';
+          });
+          
+          // Texto del encabezado al lado del logo
+          pdf.setFontSize(20);
+          pdf.setTextColor(5, 150, 105); // Verde Santiago Wanderers
+          pdf.text('Equipo Médico Santiago Wanderers', margin + 20, currentY + 8);
+          
+          pdf.setFontSize(14);
+          pdf.setTextColor(100);
+          pdf.text('Informe de Lesionados', margin + 20, currentY + 14);
+          
+        } catch (error) {
+          console.log('Logo no disponible, usando encabezado sin logo:', error);
+          // Encabezado sin logo como fallback
+          pdf.setFontSize(20);
+          pdf.setTextColor(5, 150, 105);
+          pdf.text('Equipo Médico Santiago Wanderers', margin, currentY + 8);
+          
+          pdf.setFontSize(14);
+          pdf.setTextColor(100);
+          pdf.text('Informe de Lesionados', margin, currentY + 14);
+        }
+        
+        currentY += 20;
+        
+        // Fecha de generación
+        pdf.setFontSize(10);
+        pdf.setTextColor(150);
+        const fechaGeneracion = new Date().toLocaleDateString('es-ES');
+        pdf.text(`Generado el ${fechaGeneracion}`, pageWidth - margin - 40, margin + 5);
+        
+        // PERÍODO DEL INFORME
+        pdf.setFontSize(14);
+        pdf.setTextColor(60);
+        pdf.text('Período del Informe', margin, currentY);
+        currentY += 8;
+        
+        pdf.setFontSize(16);
+        pdf.setTextColor(5, 150, 105);
+        const periodo = `${formatearFecha(datosParaInforme.periodo.inicio)} al ${formatearFecha(datosParaInforme.periodo.fin)}`;
+        pdf.text(periodo, margin, currentY);
+        currentY += 15;
+        
+        // RESUMEN EJECUTIVO CON DISEÑO PROFESIONAL
+        pdf.setFillColor(248, 250, 252); // Fondo gris claro
+        pdf.rect(margin, currentY, contentWidth, 40, 'F');
+        pdf.setDrawColor(226, 232, 240);
+        pdf.rect(margin, currentY, contentWidth, 40, 'S');
+        
+        pdf.setFontSize(16);
+        pdf.setTextColor(30, 41, 59);
+        pdf.text('RESUMEN EJECUTIVO', margin + 5, currentY + 8);
+        
+        currentY += 15;
+        
+        const resumen = [
+          { 
+            label: 'Lesiones Activas', 
+            value: datosParaInforme.resumen.total_nuevas_lesiones, 
+            color: [220, 38, 38], // Rojo para activas
+            icon: '⚠️'
+          },
+          { 
+            label: 'Lesiones Finalizadas', 
+            value: datosParaInforme.resumen.total_lesiones_finalizadas, 
+            color: [34, 197, 94], // Verde para finalizadas
+            icon: '✅'
+          },
+          { 
+            label: 'Seguimientos', 
+            value: datosParaInforme.resumen.total_cambios_diarios, 
+            color: [59, 130, 246], // Azul para seguimientos
+            icon: '📊'
+          }
+        ];
+        
+        // Tarjetas de resumen más elegantes
+        const cardWidth = (contentWidth - 20) / 3;
+        let xPos = margin + 5;
+        
+        resumen.forEach((item, index) => {
+          // Fondo de la tarjeta
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(xPos, currentY, cardWidth, 20, 'F');
+          pdf.setDrawColor(item.color[0], item.color[1], item.color[2]);
+          pdf.setLineWidth(0.5);
+          pdf.rect(xPos, currentY, cardWidth, 20, 'S');
+          
+          // Línea superior de color
+          pdf.setFillColor(item.color[0], item.color[1], item.color[2]);
+          pdf.rect(xPos, currentY, cardWidth, 3, 'F');
+          
+          // Número principal
+          pdf.setFontSize(20);
+          pdf.setTextColor(item.color[0], item.color[1], item.color[2]);
+          pdf.text(item.value.toString(), xPos + cardWidth/2, currentY + 12, { align: 'center' });
+          
+          // Etiqueta
+          pdf.setFontSize(8);
+          pdf.setTextColor(71, 85, 105);
+          pdf.text(item.label, xPos + cardWidth/2, currentY + 17, { align: 'center' });
+          
+          xPos += cardWidth + 5;
+        });
+        
+        currentY += 50;
+        
+        // SECCIÓN LESIONES ACTIVAS
+        if (datosParaInforme.nuevas_lesiones && datosParaInforme.nuevas_lesiones.length > 0) {
+          checkPageSpace(50);
+          
+          // Encabezado de sección con icono y color
+          pdf.setFillColor(254, 242, 242); // Fondo rojo claro
+          pdf.rect(margin, currentY, contentWidth, 12, 'F');
+          pdf.setDrawColor(220, 38, 38);
+          pdf.setLineWidth(2);
+          pdf.line(margin, currentY, margin + contentWidth, currentY);
+          
+          pdf.setFontSize(14);
+          pdf.setTextColor(220, 38, 38);
+          pdf.text('LESIONES ACTIVAS', margin + 5, currentY + 8);
+          
+          pdf.setFontSize(9);
+          pdf.setTextColor(127, 29, 29);
+          pdf.text(`Total: ${datosParaInforme.nuevas_lesiones.length} lesiones`, margin + contentWidth - 50, currentY + 8);
+          
+          currentY += 18;
+          
+          // Encabezado simplificado para formato de 2 líneas
+          pdf.setFillColor(220, 38, 38);
+          pdf.rect(margin, currentY, contentWidth, 12, 'F');
+          
+          pdf.setFontSize(10);
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text('JUGADOR | FECHA | DIAGNÓSTICO COMPLETO', margin + 4, currentY + 8);
+          currentY += 12;
+          
+          // Filas de datos con formato de 2 líneas más grandes
+          datosParaInforme.nuevas_lesiones.forEach((lesion, index) => {
+            checkPageSpace(30);
+            
+            // Fondo alternado más alto
+            if (index % 2 === 0) {
+              pdf.setFillColor(254, 242, 242);
+              pdf.rect(margin, currentY, contentWidth, 30, 'F');
+            }
+            
+            // Borde izquierdo de color según gravedad
+            pdf.setFillColor(220, 38, 38);
+            pdf.rect(margin, currentY, 2, 30, 'F');
+            
+            // PRIMERA LÍNEA
+            pdf.setFontSize(10);
+            pdf.setTextColor(51, 51, 51);
+            
+            // Nombre del jugador en negrita (línea 1)
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(lesion.jugador_nombre, margin + 6, currentY + 10);
+            
+            // Fecha (línea 1)
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(formatearFecha(lesion.fecha_lesion), margin + 6, currentY + 18);
+            
+            // SEGUNDA LÍNEA - Diagnóstico completo
+            pdf.setFontSize(9);
+            pdf.setTextColor(75, 85, 99);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Diagnóstico:', margin + 6, currentY + 26);
+            
+            pdf.setTextColor(51, 51, 51);
+            pdf.setFont('helvetica', 'normal');
+            
+            // Dividir diagnóstico en múltiples líneas si es muy largo
+            const diagnosticoCompleto = lesion.diagnostico_medico;
+            if (diagnosticoCompleto.length > 70) {
+              const linea1 = diagnosticoCompleto.substring(0, 70);
+              const linea2 = diagnosticoCompleto.substring(70, 140);
+              pdf.text(linea1, margin + 35, currentY + 26);
+              if (linea2) {
+                // Aumentar altura si necesita segunda línea
+                checkPageSpace(8);
+                if (index % 2 === 0) {
+                  pdf.setFillColor(254, 242, 242);
+                  pdf.rect(margin, currentY, contentWidth, 38, 'F');
+                }
+                pdf.setFillColor(220, 38, 38);
+                pdf.rect(margin, currentY, 2, 38, 'F');
+                pdf.text(linea2, margin + 35, currentY + 33);
+                currentY += 8;
+              }
+            } else {
+              pdf.text(diagnosticoCompleto, margin + 35, currentY + 26);
+            }
+            
+            // Tipo y Región en la esquina derecha - alineados
+            pdf.setFontSize(9);
+            pdf.setTextColor(75, 85, 99);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Tipo:', margin + contentWidth - 75, currentY + 10);
+            pdf.setTextColor(51, 51, 51);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(lesion.tipo_lesion_display, margin + contentWidth - 50, currentY + 10);
+            
+            pdf.setTextColor(75, 85, 99);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Región:', margin + contentWidth - 75, currentY + 18);
+            pdf.setTextColor(51, 51, 51);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(lesion.region_cuerpo_display, margin + contentWidth - 50, currentY + 18);
+            
+            currentY += 35;
+          });
+          
+          currentY += 15;
+        } else {
+          // Mensaje cuando no hay lesiones activas
+          checkPageSpace(30);
+          pdf.setFillColor(240, 253, 244);
+          pdf.rect(margin, currentY, contentWidth, 20, 'F');
+          pdf.setDrawColor(34, 197, 94);
+          pdf.rect(margin, currentY, contentWidth, 20, 'S');
+          
+          pdf.setFontSize(12);
+          pdf.setTextColor(34, 197, 94);
+          pdf.text('No hay lesiones activas en este período', margin + contentWidth/2, currentY + 12, { align: 'center' });
+          
+          currentY += 35;
+        }
+        
+        // SECCIÓN LESIONES FINALIZADAS
+        if (datosParaInforme.lesiones_finalizadas && datosParaInforme.lesiones_finalizadas.length > 0) {
+          checkPageSpace(50);
+          
+          // Encabezado de sección con icono y color
+          pdf.setFillColor(240, 253, 244); // Fondo verde claro
+          pdf.rect(margin, currentY, contentWidth, 12, 'F');
+          pdf.setDrawColor(34, 197, 94);
+          pdf.setLineWidth(2);
+          pdf.line(margin, currentY, margin + contentWidth, currentY);
+          
+          pdf.setFontSize(14);
+          pdf.setTextColor(34, 197, 94);
+          pdf.text('LESIONES FINALIZADAS', margin + 5, currentY + 8);
+          
+          pdf.setFontSize(9);
+          pdf.setTextColor(21, 128, 61);
+          pdf.text(`Total: ${datosParaInforme.lesiones_finalizadas.length} recuperaciones`, margin + contentWidth - 60, currentY + 8);
+          
+          currentY += 18;
+          
+          // Encabezado simplificado para formato de 2 líneas
+          pdf.setFillColor(34, 197, 94);
+          pdf.rect(margin, currentY, contentWidth, 12, 'F');
+          
+          pdf.setFontSize(10);
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text('JUGADOR | FECHA ALTA | DIAGNÓSTICO COMPLETO | DURACIÓN', margin + 4, currentY + 8);
+          currentY += 12;
+          
+          // Filas de datos con formato de 2 líneas más grandes
+          datosParaInforme.lesiones_finalizadas.forEach((lesion, index) => {
+            checkPageSpace(30);
+            
+            // Fondo alternado más alto
+            if (index % 2 === 0) {
+              pdf.setFillColor(240, 253, 244);
+              pdf.rect(margin, currentY, contentWidth, 30, 'F');
+            }
+            
+            // Borde izquierdo verde
+            pdf.setFillColor(34, 197, 94);
+            pdf.rect(margin, currentY, 2, 30, 'F');
+            
+            // Calcular duración si hay fechas
+            let duracion = 'N/A';
+            if (lesion.fecha_lesion && lesion.fecha_fin) {
+              const fechaInicio = new Date(lesion.fecha_lesion);
+              const fechaFin = new Date(lesion.fecha_fin);
+              const dias = Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24));
+              duracion = `${dias} días`;
+            }
+            
+            // PRIMERA LÍNEA
+            pdf.setFontSize(10);
+            pdf.setTextColor(51, 51, 51);
+            
+            // Nombre del jugador en negrita (línea 1)
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(lesion.jugador_nombre, margin + 6, currentY + 10);
+            
+            // Fecha de alta (línea 1)
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Alta: ' + formatearFecha(lesion.fecha_fin), margin + 6, currentY + 18);
+            
+            // SEGUNDA LÍNEA - Diagnóstico completo
+            pdf.setFontSize(9);
+            pdf.setTextColor(75, 85, 99);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Diagnóstico:', margin + 6, currentY + 26);
+            
+            pdf.setTextColor(51, 51, 51);
+            pdf.setFont('helvetica', 'normal');
+            
+            // Dividir diagnóstico en múltiples líneas si es muy largo
+            const diagnosticoCompleto = lesion.diagnostico_medico;
+            if (diagnosticoCompleto.length > 70) {
+              const linea1 = diagnosticoCompleto.substring(0, 70);
+              const linea2 = diagnosticoCompleto.substring(70, 140);
+              pdf.text(linea1, margin + 35, currentY + 26);
+              if (linea2) {
+                // Aumentar altura si necesita segunda línea
+                checkPageSpace(8);
+                if (index % 2 === 0) {
+                  pdf.setFillColor(240, 253, 244);
+                  pdf.rect(margin, currentY, contentWidth, 38, 'F');
+                }
+                pdf.setFillColor(34, 197, 94);
+                pdf.rect(margin, currentY, 2, 38, 'F');
+                pdf.text(linea2, margin + 35, currentY + 33);
+                currentY += 8;
+              }
+            } else {
+              pdf.text(diagnosticoCompleto, margin + 35, currentY + 26);
+            }
+            
+            // Tipo y Duración en la esquina derecha - alineados
+            pdf.setFontSize(9);
+            pdf.setTextColor(75, 85, 99);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Tipo:', margin + contentWidth - 75, currentY + 10);
+            pdf.setTextColor(51, 51, 51);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(lesion.tipo_lesion_display, margin + contentWidth - 50, currentY + 10);
+            
+            pdf.setTextColor(75, 85, 99);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Duración:', margin + contentWidth - 75, currentY + 18);
+            pdf.setTextColor(51, 51, 51);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(duracion, margin + contentWidth - 50, currentY + 18);
+            
+            currentY += 35;
+          });
+          
+          currentY += 15;
+        } else {
+          // Mensaje cuando no hay lesiones finalizadas
+          checkPageSpace(30);
+          pdf.setFillColor(254, 242, 242);
+          pdf.rect(margin, currentY, contentWidth, 20, 'F');
+          pdf.setDrawColor(220, 38, 38);
+          pdf.rect(margin, currentY, contentWidth, 20, 'S');
+          
+          pdf.setFontSize(12);
+          pdf.setTextColor(220, 38, 38);
+          pdf.text('No hay lesiones finalizadas en este período', margin + contentWidth/2, currentY + 12, { align: 'center' });
+          
+          currentY += 35;
+        }
+        
+        // SECCIÓN SEGUIMIENTOS Y EVOLUCIÓN
+        if (datosParaInforme.cambios_diarios && datosParaInforme.cambios_diarios.length > 0) {
+          checkPageSpace(50);
+          
+          // Encabezado de sección
+          pdf.setFillColor(239, 246, 255); // Fondo azul claro
+          pdf.rect(margin, currentY, contentWidth, 12, 'F');
+          pdf.setDrawColor(59, 130, 246);
+          pdf.setLineWidth(2);
+          pdf.line(margin, currentY, margin + contentWidth, currentY);
+          
+          pdf.setFontSize(14);
+          pdf.setTextColor(59, 130, 246);
+          pdf.text('SEGUIMIENTOS Y EVOLUCION', margin + 5, currentY + 8);
+          
+          pdf.setFontSize(9);
+          pdf.setTextColor(30, 64, 175);
+          pdf.text(`Total: ${datosParaInforme.cambios_diarios.length} registros`, margin + contentWidth - 50, currentY + 8);
+          
+          currentY += 18;
+          
+          // Agrupar cambios por jugador para mejor organización
+          const cambiosPorJugador = {};
+          datosParaInforme.cambios_diarios.forEach(cambio => {
+            const nombreJugador = cambio.lesion?.jugador_nombre || cambio.jugador_nombre || 'Jugador desconocido';
+            if (!cambiosPorJugador[nombreJugador]) {
+              cambiosPorJugador[nombreJugador] = [];
+            }
+            cambiosPorJugador[nombreJugador].push(cambio);
+          });
+          
+          // Mostrar solo los primeros 5 jugadores con más seguimientos
+          const jugadoresOrdenados = Object.keys(cambiosPorJugador)
+            .sort((a, b) => cambiosPorJugador[b].length - cambiosPorJugador[a].length)
+            .slice(0, 5);
+          
+          jugadoresOrdenados.forEach((jugador, jugadorIndex) => {
+            checkPageSpace(25);
+            
+            // Tarjeta por jugador
+            pdf.setFillColor(255, 255, 255);
+            pdf.rect(margin, currentY, contentWidth, 20, 'F');
+            pdf.setDrawColor(226, 232, 240);
+            pdf.rect(margin, currentY, contentWidth, 20, 'S');
+            
+            // Borde izquierdo azul
+            pdf.setFillColor(59, 130, 246);
+            pdf.rect(margin, currentY, 3, 20, 'F');
+            
+            // Nombre del jugador
+            pdf.setFontSize(10);
+            pdf.setTextColor(30, 41, 59);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(jugador, margin + 8, currentY + 6);
+            
+            // Número de seguimientos
+            pdf.setFontSize(8);
+            pdf.setTextColor(100, 116, 139);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`${cambiosPorJugador[jugador].length} seguimientos`, margin + 8, currentY + 10);
+            
+            // Último estado
+            const ultimoCambio = cambiosPorJugador[jugador][cambiosPorJugador[jugador].length - 1];
+            pdf.setFontSize(8);
+            pdf.setTextColor(59, 130, 246);
+            pdf.text(`Último estado: ${ultimoCambio.estado_display || ultimoCambio.estado_actual || 'N/A'}`, margin + 8, currentY + 14);
+            
+            // Fecha del último seguimiento
+            pdf.setFontSize(7);
+            pdf.setTextColor(156, 163, 175);
+            pdf.text(`Última actualización: ${formatearFecha(ultimoCambio.fecha)}`, margin + contentWidth - 60, currentY + 6);
+            
+            // Indicador de mejora
+            if (ultimoCambio.mejora_notable) {
+              pdf.setFillColor(34, 197, 94);
+              pdf.circle(margin + contentWidth - 15, currentY + 12, 2, 'F');
+              pdf.setFontSize(6);
+              pdf.setTextColor(34, 197, 94);
+              pdf.text('✓', margin + contentWidth - 16, currentY + 13);
+            } else {
+              pdf.setFillColor(156, 163, 175);
+              pdf.circle(margin + contentWidth - 15, currentY + 12, 2, 'F');
+              pdf.setFontSize(6);
+              pdf.setTextColor(156, 163, 175);
+              pdf.text('○', margin + contentWidth - 16, currentY + 13);
+            }
+            
+            currentY += 25;
+          });
+          
+          // Nota informativa si hay más seguimientos
+          if (Object.keys(cambiosPorJugador).length > 5) {
+            checkPageSpace(15);
+            pdf.setFillColor(245, 245, 245);
+            pdf.rect(margin, currentY, contentWidth, 10, 'F');
+            
+            pdf.setFontSize(8);
+            pdf.setTextColor(107, 114, 128);
+            const jugadoresRestantes = Object.keys(cambiosPorJugador).length - 5;
+            pdf.text(`* Se muestran los 5 jugadores con más seguimientos. Hay ${jugadoresRestantes} jugadores adicionales con seguimientos.`, 
+              margin + 5, currentY + 6);
+            
+            currentY += 15;
+          }
+          
+          currentY += 10;
+        } else {
+          // Mensaje cuando no hay seguimientos
+          checkPageSpace(30);
+          pdf.setFillColor(249, 250, 251);
+          pdf.rect(margin, currentY, contentWidth, 20, 'F');
+          pdf.setDrawColor(156, 163, 175);
+          pdf.rect(margin, currentY, contentWidth, 20, 'S');
+          
+          pdf.setFontSize(12);
+          pdf.setTextColor(107, 114, 128);
+          pdf.text('No hay seguimientos registrados en este período', margin + contentWidth/2, currentY + 12, { align: 'center' });
+          
+          currentY += 35;
+        }
+        
+        // PIE DEL INFORME
+        checkPageSpace(20);
+        pdf.setDrawColor(200);
+        pdf.line(margin, currentY, pageWidth - margin, currentY);
+        currentY += 10;
+        
+        pdf.setFontSize(8);
+        pdf.setTextColor(150);
+        pdf.text('Este informe fue generado automáticamente por el Sistema de Gestión Clínica', margin, currentY);
+        currentY += 4;
+        pdf.text('Santiago Wanderers - Equipo Médico', margin, currentY);
+        currentY += 4;
+        pdf.text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')} a las ${new Date().toLocaleTimeString('es-ES')}`, margin, currentY);
+        
+        // Número de página en la primera página
+        pdf.setPage(1);
+        pdf.setFontSize(8);
+        pdf.setTextColor(120);
+        pdf.text('Página 1', pageWidth - margin - 20, pageHeight - 10);
+        
+        const fileName = `informe-lesionados-${tipoInforme}-${fechaReferencia}.pdf`;
+        pdf.save(fileName);
+        
+        console.log('PDF nativo generado exitosamente:', fileName);
+        
+        // Limpiar datos después de generar el PDF
+        setDatosParaInforme(null);
+      } catch (error) {
+        console.error('Error al generar PDF:', error);
+        alert('Error al generar el PDF. Por favor, intenta nuevamente.');
+        setDatosParaInforme(null);
+      }
+    };
+
+    generarPDF();
+  }, [datosParaInforme, tipoInforme, fechaReferencia]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -230,6 +880,15 @@ const HistorialLesionesPage = () => {
                   <div className="w-2 h-2 rounded-full bg-wanderers-green"></div>
                 </div>
               </div>
+              <button
+                onClick={() => setShowInformeModal(true)}
+                className="inline-flex items-center px-4 py-2 bg-wanderers-green text-white font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wanderers-green transition-colors duration-200"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Generar Informe
+              </button>
             </div>
           </div>
         </div>
@@ -804,6 +1463,108 @@ const HistorialLesionesPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Configuración de Informe */}
+      {showInformeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Generar Informe de Lesiones
+                </h3>
+                <button
+                  onClick={() => setShowInformeModal(false)}
+                  className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de Informe
+                </label>
+                <select
+                  value={tipoInforme}
+                  onChange={(e) => setTipoInforme(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:border-transparent"
+                >
+                  <option value="diario">Cambios del Día</option>
+                  <option value="semanal">Resumen Semanal</option>
+                  <option value="mensual">Resumen Mensual</option>
+                  <option value="anual">Resumen Anual</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fecha de Referencia
+                </label>
+                <input
+                  type="date"
+                  value={fechaReferencia}
+                  onChange={(e) => setFechaReferencia(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:border-transparent"
+                />
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Tipo seleccionado:</strong> {
+                    tipoInforme === 'diario' ? 'Informe de un día específico' :
+                    tipoInforme === 'semanal' ? 'Informe de la semana que contiene la fecha' :
+                    tipoInforme === 'mensual' ? 'Informe del mes seleccionado' :
+                    'Informe del año seleccionado'
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowInformeModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleGenerarInforme}
+                disabled={loadingInforme}
+                className="px-4 py-2 bg-wanderers-green text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wanderers-green disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {loadingInforme ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generando...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Generar y Descargar PDF
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Template del informe (oculto) */}
+      {datosParaInforme && (
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+          <InformeTemplate datos={datosParaInforme} />
+        </div>
+      )}
     </div>
   );
 };

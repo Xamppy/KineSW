@@ -1,36 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import playerPlaceholder from '../../assets/images/logo-sw.png';
 
-// Importar las imágenes
-import doueImg from '../../assets/images/Doue.webp';
-import gulerImg from '../../assets/images/Guler.webp';
-import hakimiImg from '../../assets/images/Hakimi.jpg';
-import yamalImg from '../../assets/images/Yamal.jpeg';
-import kvaraImg from '../../assets/images/Kvara.jpeg';
-
 const JugadorCard = ({ jugador }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageSettings, setImageSettings] = useState({ position: { x: 50, y: 50 }, scale: 1 });
 
   // Función para obtener la URL de la imagen
   const getImageUrl = () => {
-    if (!jugador.foto_perfil_url) return playerPlaceholder;
+    // Si hay foto_perfil_url del backend, mostrarla directamente
+    if (jugador.foto_perfil_url) {
+      return jugador.foto_perfil_url;
+    }
     
-    // Mapeo de nombres de archivo a imágenes importadas
-    const imageMap = {
-      'Doue.webp': doueImg,
-      'Guler.webp': gulerImg,
-      'Hakimi.jpg': hakimiImg,
-      'Yamal.jpeg': yamalImg,
-      'Kvara.jpeg': kvaraImg
-    };
-
-    // Obtener el nombre del archivo de la ruta
-    const fileName = jugador.foto_perfil_url.split('/').pop();
-    return imageMap[fileName] || playerPlaceholder;
+    // Si no hay foto, mostrar placeholder
+    return playerPlaceholder;
   };
+
+  // Cargar configuraciones guardadas de imagen
+  useEffect(() => {
+    const savedSettings = localStorage.getItem(`image-settings-${jugador.id}`);
+    if (savedSettings) {
+      setImageSettings(JSON.parse(savedSettings));
+    }
+  }, [jugador.id]);
 
   return (
     <Link
@@ -40,7 +35,7 @@ const JugadorCard = ({ jugador }) => {
       aria-label={`Ver ficha clínica de ${jugador.nombres} ${jugador.apellidos}`}
     >
       <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-200 h-full flex flex-col">
-        <div className="relative aspect-square bg-gray-100">
+        <div className="relative aspect-square bg-gray-100 overflow-hidden">
           {!imageLoaded && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-8 h-8 border-2 border-wanderers-green border-t-transparent rounded-full animate-spin"></div>
@@ -50,6 +45,10 @@ const JugadorCard = ({ jugador }) => {
             src={imageError ? playerPlaceholder : getImageUrl()}
             alt={`Foto de ${jugador.nombres} ${jugador.apellidos}`}
             className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            style={{
+              transform: `scale(${imageSettings.scale})`,
+              objectPosition: `${imageSettings.position.x}% ${imageSettings.position.y}%`
+            }}
             onError={() => {
               setImageError(true);
               setImageLoaded(true);

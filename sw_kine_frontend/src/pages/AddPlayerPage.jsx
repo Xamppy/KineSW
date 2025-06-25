@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getDivisiones, setDevModeNoAuth, addJugador } from '../services/api';
+import { getDivisiones, addJugador } from '../services/api';
 
 const AddPlayerPage = () => {
   const navigate = useNavigate();
@@ -33,10 +33,6 @@ const AddPlayerPage = () => {
 
   // Cargar divisiones al montar el componente
   useEffect(() => {
-    // Activar modo desarrollo
-    setDevModeNoAuth(true);
-    console.log('Modo desarrollo activado');
-    
     const fetchDivisiones = async () => {
       try {
         console.log('Iniciando fetchDivisiones...');
@@ -49,13 +45,6 @@ const AddPlayerPage = () => {
         if (Array.isArray(data)) {
           console.log('Los datos son un array válido');
           setDivisiones(data);
-          // Si hay divisiones, establecer la primera como valor por defecto
-          if (data.length > 0) {
-            console.log('Estableciendo división por defecto:', data[0]);
-            setFormData(prev => ({ ...prev, division: data[0].id.toString() }));
-          } else {
-            console.log('No hay divisiones disponibles');
-          }
         } else {
           console.error('Los datos no son un array:', data);
           throw new Error('El formato de los datos recibidos no es válido');
@@ -72,13 +61,50 @@ const AddPlayerPage = () => {
     fetchDivisiones();
   }, []);
 
+  // Función para formatear RUT automáticamente
+  const formatearRUT = (rut) => {
+    // Limpiar el RUT de cualquier caracter no numérico excepto K
+    const rutLimpio = rut.replace(/[^0-9kK]/g, '');
+    
+    // Si está vacío, retornar vacío
+    if (!rutLimpio) return '';
+    
+    // Si tiene menos de 2 caracteres, retornar tal como está
+    if (rutLimpio.length < 2) return rutLimpio;
+    
+    // Separar el dígito verificador
+    const cuerpo = rutLimpio.slice(0, -1);
+    const dv = rutLimpio.slice(-1).toUpperCase();
+    
+    // Formatear el cuerpo del RUT con puntos
+    let cuerpoFormateado = '';
+    for (let i = cuerpo.length - 1, contador = 0; i >= 0; i--, contador++) {
+      if (contador > 0 && contador % 3 === 0) {
+        cuerpoFormateado = '.' + cuerpoFormateado;
+      }
+      cuerpoFormateado = cuerpo[i] + cuerpoFormateado;
+    }
+    
+    return `${cuerpoFormateado}-${dv}`;
+  };
+
   // Manejar cambios en los campos
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
+    
+    // Si es el campo RUT, aplicar formateo automático
+    if (name === 'rut') {
+      const rutFormateado = formatearRUT(value);
+      setFormData(prevState => ({
+        ...prevState,
+        [name]: rutFormateado
+      }));
+    } else {
+      setFormData(prevState => ({
+        ...prevState,
+        [name]: value
+      }));
+    }
   };
 
   // Manejar cambios en el archivo de foto
