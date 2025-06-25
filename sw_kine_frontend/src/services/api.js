@@ -304,7 +304,7 @@ export const getAllLesionesPorJugador = async (jugadorId) => {
 export const getHistorialDiarioLesion = async (lesionId) => {
   try {
     console.log(`Obteniendo historial diario para lesión ${lesionId}`);
-    const response = await api.get(`/lesiones/${lesionId}/historial-diario/`);
+    const response = await api.get(`/lesiones/${lesionId}/historial_diario/`);
     console.log('Respuesta del historial diario:', response.data);
     
     return Array.isArray(response.data) ? response.data : (response.data.results || []);
@@ -365,19 +365,91 @@ export const addEstadoDiario = async (lesionId, estado, fecha, observaciones = '
       observaciones: observaciones
     };
     
+    console.log('Datos a enviar:', JSON.stringify(estadoData, null, 2));
     console.log('Realizando petición a /estados-diarios/');
+    
+    // Primero intentar crear el estado diario
     const response = await api.post('/estados-diarios/', estadoData);
     console.log('Respuesta de creación de estado diario:', response.data);
     
     return response.data;
   } catch (error) {
     console.error('Error al crear estado diario:', error);
+    console.error('Detalles del error:', error.response?.data);
+    
     if (error.response?.status === 401) {
       throw { 
         message: 'Sesión expirada o no iniciada. Por favor inicie sesión nuevamente.',
         isAuthError: true
       };
     }
+    
+    // Si el error es por duplicado (unique constraint)
+    if (error.response?.status === 400) {
+      if (error.response?.data?.non_field_errors) {
+        const errorMessages = error.response.data.non_field_errors;
+        const isDuplicateError = errorMessages.some(err => {
+          return err.includes('unique') || 
+                 err.includes('already exists') || 
+                 err.includes('duplicate') ||
+                 err.includes('The fields lesion, fecha must make a unique set') ||
+                 err.includes('unique together') ||
+                 err.includes('unique_together') ||
+                 err.includes('Los campos lesion, fecha deben formar un conjunto único') ||
+                 err.includes('conjunto único') ||
+                 err.includes('campos') && err.includes('único');
+        });
+        
+        if (isDuplicateError) {
+          // Calcular tiempo hasta mañana
+          const ahora = new Date();
+          const manana = new Date(ahora);
+          manana.setDate(ahora.getDate() + 1);
+          manana.setHours(0, 0, 0, 0);
+          
+          const tiempoRestante = manana.getTime() - ahora.getTime();
+          const horasRestantes = Math.floor(tiempoRestante / (1000 * 60 * 60));
+          const minutosRestantes = Math.floor((tiempoRestante % (1000 * 60 * 60)) / (1000 * 60));
+          
+          throw {
+            isDuplicateError: true,
+            message: `Ya existe un estado registrado para el día de hoy (${fecha}). Podrás registrar un nuevo estado mañana a las 00:00 hrs.`,
+            timeRemaining: `${horasRestantes}h ${minutosRestantes}m`,
+            horasRestantes,
+            minutosRestantes
+          };
+        }
+      }
+      
+      // Verificar también si el error está en el mensaje general
+      const errorString = JSON.stringify(error.response.data);
+      if (errorString.includes('unique') || 
+          errorString.includes('duplicate') || 
+          errorString.includes('conjunto único') ||
+          errorString.includes('Los campos lesion, fecha deben formar un conjunto único')) {
+
+        
+        // Calcular tiempo hasta mañana
+        const ahora = new Date();
+        const manana = new Date(ahora);
+        manana.setDate(ahora.getDate() + 1);
+        manana.setHours(0, 0, 0, 0);
+        
+        const tiempoRestante = manana.getTime() - ahora.getTime();
+        const horasRestantes = Math.floor(tiempoRestante / (1000 * 60 * 60));
+        const minutosRestantes = Math.floor((tiempoRestante % (1000 * 60 * 60)) / (1000 * 60));
+        
+        throw {
+          isDuplicateError: true,
+          message: `Ya existe un estado registrado para el día de hoy (${fecha}). Podrás registrar un nuevo estado mañana a las 00:00 hrs.`,
+          timeRemaining: `${horasRestantes}h ${minutosRestantes}m`,
+          horasRestantes,
+          minutosRestantes
+        };
+      }
+    }
+    
+    console.log('No se detectó como error de duplicado, lanzando error original');
     throw error.response?.data || error;
   }
 };

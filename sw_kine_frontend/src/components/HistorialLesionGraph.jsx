@@ -32,7 +32,10 @@ const HistorialLesionGraph = ({ historial = [], diasMostrar = 90 }) => {
 
   // Formatear fecha para mostrar
   const formatearFechaLegible = (fecha) => {
-    const fechaObj = new Date(fecha);
+    if (!fecha) return '';
+    // Crear fecha local para evitar problemas de zona horaria
+    const [year, month, day] = fecha.split('-');
+    const fechaObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     return fechaObj.toLocaleDateString('es-CL', {
       weekday: 'long',
       day: 'numeric',
@@ -44,7 +47,10 @@ const HistorialLesionGraph = ({ historial = [], diasMostrar = 90 }) => {
   // Formatear fecha en formato DD-MM-YYYY
   const formatearFechaCorta = (fecha) => {
     if (!fecha) return '';
-    return new Date(fecha).toLocaleDateString('es-ES', {
+    // Crear fecha local para evitar problemas de zona horaria
+    const [year, month, day] = fecha.split('-');
+    const fechaObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return fechaObj.toLocaleDateString('es-ES', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'

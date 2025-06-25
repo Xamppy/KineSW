@@ -50,9 +50,41 @@ export const formatDateForBackend = (dateTimeString) => {
 };
 
 /**
- * Obtiene la fecha actual en formato datetime-local
+ * Obtiene la fecha actual en formato datetime-local considerando zona horaria local
  * @returns {string} Fecha actual en formato YYYY-MM-DDThh:mm
  */
 export const getCurrentDateTime = () => {
-  return new Date().toISOString().slice(0, 16);
+  const ahora = new Date();
+  // Ajustar por zona horaria local
+  const fechaLocal = new Date(ahora.getTime() - (ahora.getTimezoneOffset() * 60000));
+  return fechaLocal.toISOString().slice(0, 16);
+};
+
+/**
+ * Obtiene la fecha actual en formato YYYY-MM-DD considerando zona horaria local
+ * @returns {string} Fecha actual en formato YYYY-MM-DD
+ */
+export const getCurrentDate = () => {
+  const ahora = new Date();
+  // Ajustar por zona horaria local
+  const fechaLocal = new Date(ahora.getTime() - (ahora.getTimezoneOffset() * 60000));
+  return fechaLocal.toISOString().split('T')[0];
+};
+
+/**
+ * Convierte una fecha a formato datetime-local para inputs HTML considerando zona horaria
+ * @param {string} dateString - Fecha en formato ISO o YYYY-MM-DD
+ * @returns {string} Fecha en formato YYYY-MM-DDThh:mm
+ */
+export const formatDateForInputWithTimezone = (dateString) => {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    // Ajustar por zona horaria local
+    const fechaLocal = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+    return fechaLocal.toISOString().slice(0, 16);
+  } catch (error) {
+    console.error('Error al formatear fecha para input:', error);
+    return dateString;
+  }
 }; 

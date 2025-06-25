@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getJugadoresConLesionActiva, addEstadoDiario, getHistorialDiarioLesion, finalizarLesion } from '../services/api';
 import { toast } from 'react-toastify';
 import HistorialLesionGraph from '../components/HistorialLesionGraph';
+import { getCurrentDate } from '../utils/dateUtils';
 
 const EstadoLesionPage = () => {
   const [jugadoresActivos, setJugadoresActivos] = useState([]);
@@ -116,16 +117,60 @@ const EstadoLesionPage = () => {
       return;
     }
 
+    // Verificar si ya existe un estado para hoy
+    const fechaHoy = getCurrentDate();
+    const estadoHoyExistente = historialJugador.find(estado => estado.fecha === fechaHoy);
+    
+    if (estadoHoyExistente) {
+      // Calcular tiempo hasta mañana
+      const ahora = new Date();
+      const manana = new Date(ahora);
+      manana.setDate(ahora.getDate() + 1);
+      manana.setHours(0, 0, 0, 0);
+      
+      const tiempoRestante = manana.getTime() - ahora.getTime();
+      const horasRestantes = Math.floor(tiempoRestante / (1000 * 60 * 60));
+      const minutosRestantes = Math.floor((tiempoRestante % (1000 * 60 * 60)) / (1000 * 60));
+      
+      alert(
+        `⚠️ ESTADO YA REGISTRADO\n\n` +
+        `Ya existe un estado registrado para el día de hoy (${formatearFecha(fechaHoy)}).\n\n` +
+        `Estado actual: ${
+          estadoHoyExistente.estado === 'camilla' ? 'Tratamiento en Camilla' :
+          estadoHoyExistente.estado === 'gimnasio' ? 'Tratamiento en Gimnasio' :
+          estadoHoyExistente.estado === 'reintegro' ? 'Reintegro Deportivo' :
+          estadoHoyExistente.estado
+        }\n\n` +
+        `⏰ Tiempo restante hasta mañana: ${horasRestantes}h ${minutosRestantes}m\n\n` +
+        `Podrás registrar un nuevo estado a las 00:00 hrs.`
+      );
+      
+      toast.warning(
+        `Ya existe un estado para hoy. Nuevo registro disponible en: ${horasRestantes}h ${minutosRestantes}m`,
+        {
+          autoClose: 8000,
+          position: "top-center",
+          style: {
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }
+        }
+      );
+      
+      return;
+    }
+
     try {
       setGuardandoEstado(true);
       
-      // Obtener la fecha de hoy en formato YYYY-MM-DD
-      const fechaHoy = new Date().toISOString().split('T')[0];
+      // Obtener la fecha de hoy en la zona horaria local (Chile)
+      const fechaHoy = getCurrentDate();
       
       console.log('Guardando estado:', {
         lesionId: selectedJugador.id,
         estado: estadoSeleccionadoHoy,
-        fecha: fechaHoy
+        fecha: fechaHoy,
+        fechaLocal: new Date().toLocaleDateString('es-CL')
       });
 
       await addEstadoDiario(
@@ -150,7 +195,31 @@ const EstadoLesionPage = () => {
       
     } catch (error) {
       console.error('Error al guardar estado del día:', error);
-      toast.error('Error al guardar el estado del día. Inténtalo nuevamente.');
+      
+      if (error.isDuplicateError) {
+        // Mostrar un alert nativo más prominente
+        alert(
+          `⚠️ ESTADO YA REGISTRADO\n\n` +
+          `${error.message}\n\n` +
+          `⏰ Tiempo restante hasta mañana: ${error.timeRemaining}\n\n` +
+          `Podrás registrar un nuevo estado a las 00:00 hrs.`
+        );
+        
+        // También mostrar toast para que quede visible en la interfaz
+        toast.warning(
+          `Ya existe un estado para hoy. Nuevo registro disponible en: ${error.timeRemaining}`,
+          {
+            autoClose: 10000,
+            position: "top-center",
+            style: {
+              fontSize: '16px',
+              fontWeight: 'bold'
+            }
+          }
+        );
+      } else {
+        toast.error('Error al guardar el estado del día. Inténtalo nuevamente.');
+      }
     } finally {
       setGuardandoEstado(false);
     }
@@ -204,7 +273,10 @@ const EstadoLesionPage = () => {
   };
 
   const formatearFecha = (fecha) => {
-    const fechaObj = new Date(fecha);
+    if (!fecha) return '';
+    // Crear fecha local para evitar problemas de zona horaria
+    const [year, month, day] = fecha.split('-');
+    const fechaObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     return fechaObj.toLocaleDateString('es-CL', {
       day: '2-digit',
       month: '2-digit',
@@ -546,6 +618,31 @@ const EstadoLesionPage = () => {
                       </div>
                     </div>
 
+                    {/* Información del último estado registrado */}
+                    {historialJugador.length > 0 && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <h5 className="text-sm font-medium text-blue-900">Último estado registrado</h5>
+                        </div>
+                        <div className="text-sm text-blue-800">
+                          <p>
+                            <span className="font-medium">Fecha:</span> {formatearFecha(historialJugador[historialJugador.length - 1]?.fecha)}
+                          </p>
+                          <p>
+                            <span className="font-medium">Estado:</span> {
+                              historialJugador[historialJugador.length - 1]?.estado === 'camilla' ? 'Tratamiento en Camilla' :
+                              historialJugador[historialJugador.length - 1]?.estado === 'gimnasio' ? 'Tratamiento en Gimnasio' :
+                              historialJugador[historialJugador.length - 1]?.estado === 'reintegro' ? 'Reintegro Deportivo' :
+                              historialJugador[historialJugador.length - 1]?.estado
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Opciones de Estado */}
                     <div className="space-y-4 mb-6">
                       <h4 className="font-medium text-gray-900">Selecciona el estado de tratamiento de hoy:</h4>
@@ -670,28 +767,55 @@ const EstadoLesionPage = () => {
                       >
                         Limpiar
                       </button>
-                      <button
-                        onClick={handleGuardarEstado}
-                        disabled={!estadoSeleccionadoHoy || guardandoEstado}
-                        className="bg-wanderers-green text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-wanderers-green-dark transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                      >
-                        {guardandoEstado ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span>Guardando...</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span>Guardar Estado de Hoy</span>
-                          </>
-                        )}
-                      </button>
+                      
+                      {(() => {
+                        const fechaHoy = getCurrentDate();
+                        const estadoHoyExistente = historialJugador.find(estado => estado.fecha === fechaHoy);
+                        
+                        if (estadoHoyExistente) {
+                          return (
+                            <div className="flex items-center space-x-3">
+                              <div className="text-sm text-green-600 font-medium">
+                                ✅ Estado de hoy ya registrado
+                              </div>
+                              <button
+                                disabled={true}
+                                className="bg-gray-400 text-white font-bold py-2 px-6 rounded-lg cursor-not-allowed flex items-center space-x-2"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span>Estado Registrado</span>
+                              </button>
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <button
+                            onClick={handleGuardarEstado}
+                            disabled={!estadoSeleccionadoHoy || guardandoEstado}
+                            className="bg-wanderers-green text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-wanderers-green-dark transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                          >
+                            {guardandoEstado ? (
+                              <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Guardando...</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span>Guardar Estado de Hoy</span>
+                              </>
+                            )}
+                          </button>
+                        );
+                      })()}
                     </div>
 
                     {/* Historial Visual */}
