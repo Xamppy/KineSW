@@ -212,6 +212,54 @@ const HistorialLesionesPage = () => {
     }
   };
 
+  // Función para formatear texto amigable
+  const formatearTextoAmigable = (texto) => {
+    if (!texto) return 'N/A';
+    
+    // Mapeo de valores específicos conocidos
+    const mapeoTextos = {
+      // Regiones del cuerpo
+      'tobillo_izq': 'Tobillo Izquierdo',
+      'tobillo_der': 'Tobillo Derecho',
+      'rodilla_izq': 'Rodilla Izquierda',
+      'rodilla_der': 'Rodilla Derecha',
+      'cadera_izq': 'Cadera Izquierda',
+      'cadera_der': 'Cadera Derecha',
+      'hombro_izq': 'Hombro Izquierdo',
+      'hombro_der': 'Hombro Derecho',
+      'muneca_izq': 'Muñeca Izquierda',
+      'muneca_der': 'Muñeca Derecha',
+      'codo_izq': 'Codo Izquierdo',
+      'codo_der': 'Codo Derecho',
+      
+      // Tipos de lesión
+      'muscular': 'Muscular',
+      'ligamentosa': 'Ligamentosa',
+      'osea': 'Ósea',
+      'tendinosa': 'Tendinosa',
+      'articular': 'Articular',
+      
+      // Gravedad
+      'leve': 'LEVE',
+      'menor': 'MENOR',
+      'moderada': 'MODERADA',
+      'grave': 'GRAVE',
+      'severa': 'SEVERA'
+    };
+    
+    // Si existe un mapeo específico, usarlo
+    if (mapeoTextos[texto.toLowerCase()]) {
+      return mapeoTextos[texto.toLowerCase()];
+    }
+    
+    // Si no, formatear genéricamente
+    return texto
+      .replace(/_/g, ' ') // Reemplazar guiones bajos con espacios
+      .split(' ')
+      .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   // Funciones para manejo de informes
   const calcularRangoFechas = (tipo, fecha) => {
     const fechaRef = new Date(fecha);
@@ -1172,11 +1220,6 @@ const HistorialLesionesPage = () => {
                                         : 'bg-green-100 text-green-900 border-green-300 shadow-sm'
                                     }`}
                                   >
-                                    <div 
-                                      className={`w-2 h-2 rounded-full mr-1 ${
-                                        lesion.esta_activa ? 'bg-red-500' : 'bg-green-500'
-                                      }`}
-                                    ></div>
                                     {lesion.esta_activa ? 'ACTIVA' : 'RECUPERADA'}
                                   </span>
                                 </div>
@@ -1213,7 +1256,7 @@ const HistorialLesionesPage = () => {
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
                                     <span className="font-medium">Región:</span>
-                                    <span className="ml-1">{lesion.region_cuerpo_display}</span>
+                                    <span className="ml-1">{formatearTextoAmigable(lesion.region_cuerpo_display || lesion.region_cuerpo)}</span>
                                   </div>
                                   
                                   <div className="flex items-center">
@@ -1221,7 +1264,7 @@ const HistorialLesionesPage = () => {
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     <span className="font-medium">Tipo:</span>
-                                    <span className="ml-1">{lesion.tipo_lesion_display}</span>
+                                    <span className="ml-1">{formatearTextoAmigable(lesion.tipo_lesion_display || lesion.tipo_lesion)}</span>
                                   </div>
                                 </div>
                               </div>
@@ -1230,7 +1273,7 @@ const HistorialLesionesPage = () => {
                                 <span
                                   className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border-2 shadow-sm ${getGravedadColor(lesion.gravedad_lesion)}`}
                                 >
-                                  {lesion.gravedad_lesion_display}
+                                  {formatearTextoAmigable(lesion.gravedad_lesion_display || lesion.gravedad_lesion)}
                                 </span>
                               </div>
                             </div>
@@ -1313,7 +1356,7 @@ const HistorialLesionesPage = () => {
                                 <span
                                   className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getGravedadColor(selectedLesion.gravedad_lesion)}`}
                                 >
-                                  {selectedLesion.gravedad_lesion_display}
+                                  {formatearTextoAmigable(selectedLesion.gravedad_lesion_display || selectedLesion.gravedad_lesion)}
                                 </span>
                                 <span
                                   className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
@@ -1356,11 +1399,11 @@ const HistorialLesionesPage = () => {
                                 <div className="space-y-2">
                                   <div className="flex justify-between">
                                     <span className="text-sm text-gray-600">Tipo:</span>
-                                    <span className="text-sm font-medium">{selectedLesion.tipo_lesion_display}</span>
+                                    <span className="text-sm font-medium">{formatearTextoAmigable(selectedLesion.tipo_lesion_display || selectedLesion.tipo_lesion)}</span>
                                   </div>
                                   <div className="flex justify-between">
                                     <span className="text-sm text-gray-600">Región:</span>
-                                    <span className="text-sm font-medium">{selectedLesion.region_cuerpo_display}</span>
+                                    <span className="text-sm font-medium">{formatearTextoAmigable(selectedLesion.region_cuerpo_display || selectedLesion.region_cuerpo)}</span>
                                   </div>
                                   {selectedLesion.mecanismo_lesion && (
                                     <div className="flex justify-between">

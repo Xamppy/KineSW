@@ -163,6 +163,20 @@ class JugadorViewSet(viewsets.ModelViewSet):
             'message': 'Foto subida exitosamente',
             'jugador': serializer.data
         }, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['get'])
+    def lesiones(self, request, pk=None):
+        """
+        Endpoint para obtener todas las lesiones de un jugador específico
+        """
+        jugador = self.get_object()
+        lesiones = Lesion.objects.filter(jugador=jugador).order_by('-fecha_lesion')
+        
+        # Usar el serializer de lesiones para devolver los datos completos
+        from .serializers import LesionSerializer
+        serializer = LesionSerializer(lesiones, many=True, context={'request': request})
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class AtencionKinesicaViewSet(viewsets.ModelViewSet):
     """
