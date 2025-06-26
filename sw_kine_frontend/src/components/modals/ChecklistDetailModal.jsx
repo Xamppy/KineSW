@@ -6,6 +6,279 @@ const ChecklistDetailModal = ({ checklist, onClose }) => {
     return null;
   }
 
+  // Función para extraer solo el nombre sin el RUT
+  const extractNombreSinRut = (nombreCompleto) => {
+    if (!nombreCompleto) return '';
+    // Remover el RUT entre paréntesis al final
+    return nombreCompleto.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  };
+
+  // Función de impresión mejorada
+  const handlePrint = () => {
+    const printContent = document.querySelector('.checklist-print-content');
+    const originalContent = document.body.innerHTML;
+    
+    // Crear contenido para impresión
+    const printHTML = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Checklist Post-Partido - ${extractNombreSinRut(checklist.jugador_nombre)}</title>
+          <style>
+            @page {
+              margin: 1.5cm;
+              size: A4;
+            }
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              line-height: 1.5;
+              color: #1f2937;
+            }
+            .header {
+              border-bottom: 2px solid #059669;
+              padding-bottom: 1rem;
+              margin-bottom: 1.5rem;
+            }
+            .header h1 {
+              color: #059669;
+              font-size: 1.5rem;
+              font-weight: bold;
+              margin-bottom: 0.5rem;
+            }
+            .header p {
+              color: #6b7280;
+              font-size: 0.875rem;
+            }
+            .section {
+              margin-bottom: 1.5rem;
+              page-break-inside: avoid;
+            }
+            .section-title {
+              background-color: #f3f4f6;
+              padding: 0.75rem;
+              border-radius: 0.5rem;
+              font-weight: 600;
+              margin-bottom: 1rem;
+              display: flex;
+              align-items: center;
+            }
+            .section-title svg {
+              width: 1.25rem;
+              height: 1.25rem;
+              margin-right: 0.5rem;
+            }
+            .grid {
+              display: grid;
+              gap: 1rem;
+            }
+            .grid-2 {
+              grid-template-columns: 1fr 1fr;
+            }
+            .grid-3 {
+              grid-template-columns: 1fr 1fr 1fr;
+            }
+            .field {
+              margin-bottom: 0.75rem;
+            }
+            .field-label {
+              font-weight: 500;
+              color: #4b5563;
+              font-size: 0.875rem;
+              margin-bottom: 0.25rem;
+            }
+            .field-value {
+              background-color: #f9fafb;
+              padding: 0.5rem;
+              border-radius: 0.25rem;
+              border: 1px solid #e5e7eb;
+            }
+            .dolor-indicator {
+              display: inline-flex;
+              align-items: center;
+              padding: 0.25rem 0.75rem;
+              border-radius: 9999px;
+              font-size: 0.875rem;
+              font-weight: 500;
+            }
+            .dolor-si {
+              background-color: #fef2f2;
+              color: #dc2626;
+            }
+            .dolor-no {
+              background-color: #f0fdf4;
+              color: #16a34a;
+            }
+            .intensidad-container {
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+            }
+            .intensidad-numero {
+              font-size: 1.5rem;
+              font-weight: bold;
+              color: #dc2626;
+            }
+            .intensidad-dots {
+              display: flex;
+              gap: 0.125rem;
+            }
+            .dot {
+              width: 0.75rem;
+              height: 0.75rem;
+              border-radius: 50%;
+            }
+            .dot-filled {
+              background-color: #dc2626;
+            }
+            .dot-empty {
+              background-color: #e5e7eb;
+            }
+            .observaciones {
+              background-color: #faf5ff;
+              padding: 0.75rem;
+              border-radius: 0.25rem;
+              border: 1px solid #e9d5ff;
+              white-space: pre-wrap;
+            }
+            @media print {
+              .no-break {
+                page-break-inside: avoid;
+              }
+              .break-before {
+                page-break-before: always;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Detalles del Checklist Post-Partido</h1>
+            <p>Evaluación realizada el ${formatDate(checklist.fecha_registro_checklist || checklist.fecha_registro)}</p>
+          </div>
+          
+          <div class="section no-break">
+            <div class="section-title">📊 Información del Partido</div>
+            <div class="grid grid-3">
+              <div class="field">
+                <div class="field-label">Jugador</div>
+                <div class="field-value">
+                  <strong>${extractNombreSinRut(checklist.jugador_nombre) || `${checklist.jugador_detalle?.nombres || ''} ${checklist.jugador_detalle?.apellidos || ''}`.trim()}</strong><br>
+                  <small>RUT: ${checklist.jugador_detalle?.rut || checklist.jugador?.rut || 'N/A'}</small><br>
+                  <small>División: ${checklist.jugador_detalle?.division_nombre || checklist.jugador?.division_nombre || 'N/A'}</small>
+                </div>
+              </div>
+              <div class="field">
+                <div class="field-label">Rival</div>
+                <div class="field-value"><strong>${checklist.rival_partido || checklist.rival}</strong></div>
+              </div>
+              <div class="field">
+                <div class="field-label">Fecha del Partido</div>
+                <div class="field-value">
+                  <strong>${formatDate(checklist.fecha_partido)}</strong><br>
+                  <small>${checklist.partido_detalle?.condicion === 'local' ? '🏠 Partido en casa' : '✈️ Partido de visita'}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section no-break">
+            <div class="section-title">⚠️ Evaluación de Dolor/Molestia</div>
+            <div class="grid grid-2">
+              <div class="field">
+                <div class="field-label">¿Presenta dolor o molestia?</div>
+                <div class="field-value">
+                  <span class="dolor-indicator ${checklist.dolor_molestia ? 'dolor-si' : 'dolor-no'}">
+                    ${checklist.dolor_molestia ? '⚠️ Sí' : '✅ No'}
+                  </span>
+                </div>
+              </div>
+              ${checklist.dolor_molestia ? `
+                <div class="field">
+                  <div class="field-label">Intensidad del dolor</div>
+                  <div class="field-value">
+                    <div class="intensidad-container">
+                      <span class="intensidad-numero">${checklist.intensidad_dolor || 'N/A'}</span>
+                      <span>/10</span>
+                      <div class="intensidad-dots">
+                        ${[...Array(10)].map((_, i) => `
+                          <div class="dot ${i < (checklist.intensidad_dolor || 0) ? 'dot-filled' : 'dot-empty'}"></div>
+                        `).join('')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="field" style="grid-column: span 2;">
+                  <div class="field-label">Zona anatómica afectada</div>
+                  <div class="field-value"><strong>${checklist.zona_anatomica_dolor || 'No especificada'}</strong></div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">📋 Información Médica Detallada</div>
+            <div class="grid grid-2">
+              <div class="field">
+                <div class="field-label">Mecanismo de lesión</div>
+                <div class="field-value">${formatMecanismoLesion(checklist.mecanismo_dolor_evaluado)}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Momento de aparición</div>
+                <div class="field-value">${formatMomentoAparicion(checklist.momento_aparicion_molestia)}</div>
+              </div>
+              <div class="field" style="grid-column: span 2;">
+                <div class="field-label">Diagnóstico presuntivo</div>
+                <div class="field-value">${checklist.diagnostico_presuntivo_postpartido || 'No especificado'}</div>
+              </div>
+              <div class="field" style="grid-column: span 2;">
+                <div class="field-label">Tratamiento inmediato aplicado</div>
+                <div class="field-value">${checklist.tratamiento_inmediato_realizado || 'No se aplicó tratamiento inmediato'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">📝 Observaciones</div>
+            <div class="field">
+              <div class="field-label">Observaciones del kinesiólogo</div>
+              <div class="observaciones">${checklist.observaciones_checklist || 'Sin observaciones del kinesiólogo.'}</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">👨‍⚕️ Información del Profesional</div>
+            <div class="grid grid-2">
+              <div class="field">
+                <div class="field-label">Realizado por</div>
+                <div class="field-value"><strong>${checklist.realizado_por_nombre || checklist.kinesiologo?.nombre || checklist.realizado_por || '1'}</strong></div>
+              </div>
+              <div class="field">
+                <div class="field-label">Fecha de registro</div>
+                <div class="field-value">
+                  <strong>${formatDate(checklist.fecha_registro_checklist || checklist.fecha_registro)}</strong><br>
+                  <small>${(checklist.fecha_registro_checklist || checklist.fecha_registro) && new Date(checklist.fecha_registro_checklist || checklist.fecha_registro).toLocaleTimeString('es-CL')}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    // Abrir nueva ventana para impresión
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
   // Función para formatear la fecha
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -15,6 +288,10 @@ const ChecklistDetailModal = ({ checklist, onClose }) => {
   // Función para formatear el momento de aparición
   const formatMomentoAparicion = (momento) => {
     const momentos = {
+      'PRIMER_TIEMPO': 'Primer Tiempo',
+      'SEGUNDO_TIEMPO': 'Segundo Tiempo',
+      'CALENTAMIENTO': 'Calentamiento',
+      'POST_PARTIDO': 'Post Partido',
       'durante_partido': 'Durante el partido',
       'post_partido': 'Post-partido',
       'pre_partido': 'Pre-partido',
@@ -26,6 +303,11 @@ const ChecklistDetailModal = ({ checklist, onClose }) => {
   // Función para formatear el mecanismo de lesión
   const formatMecanismoLesion = (mecanismo) => {
     const mecanismos = {
+      'SOBRECARGA': 'Sobrecarga',
+      'TRAUMATISMO': 'Traumatismo',
+      'CONTACTO': 'Contacto',
+      'GESTO_TECNICO': 'Gesto Técnico',
+      'INDETERMINADO': 'Indeterminado',
       'contacto_directo': 'Contacto directo',
       'sin_contacto': 'Sin contacto',
       'sobrecarga': 'Sobrecarga',
@@ -37,7 +319,7 @@ const ChecklistDetailModal = ({ checklist, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto checklist-print-content">
         {/* Header del modal */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-lg">
           <div>
@@ -73,27 +355,24 @@ const ChecklistDetailModal = ({ checklist, onClose }) => {
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">Jugador</label>
                 <p className="text-lg font-semibold text-gray-900">
-                  {checklist.jugador?.nombres} {checklist.jugador?.apellidos}
+                  {extractNombreSinRut(checklist.jugador_nombre) || `${checklist.jugador_detalle?.nombres || ''} ${checklist.jugador_detalle?.apellidos || ''}`.trim()}
                 </p>
                 <p className="text-sm text-gray-500">
-                  RUT: {checklist.jugador?.rut || 'N/A'}
+                  RUT: {checklist.jugador_detalle?.rut || checklist.jugador?.rut || 'N/A'}
                 </p>
                 <p className="text-sm text-gray-500">
-                  División: {checklist.jugador?.division_nombre || 'N/A'}
+                  División: {checklist.jugador_detalle?.division_nombre || checklist.jugador?.division_nombre || 'N/A'}
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">Rival</label>
-                <p className="text-lg font-semibold text-gray-900">{checklist.rival}</p>
-                <p className="text-sm text-gray-500">
-                  División: {checklist.division || 'N/A'}
-                </p>
+                <p className="text-lg font-semibold text-gray-900">{checklist.rival_partido || checklist.rival}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">Fecha del Partido</label>
                 <p className="text-lg font-semibold text-gray-900">{formatDate(checklist.fecha_partido)}</p>
                 <p className="text-sm text-gray-500">
-                  {checklist.ubicacion_partido === 'Local' ? '🏠 Partido en casa' : '✈️ Partido de visita'}
+                  {checklist.partido_detalle?.condicion === 'local' ? '🏠 Partido en casa' : '✈️ Partido de visita'}
                 </p>
               </div>
             </div>
@@ -148,7 +427,7 @@ const ChecklistDetailModal = ({ checklist, onClose }) => {
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-600 mb-1">Zona anatómica afectada</label>
                     <p className="text-lg text-gray-900 bg-red-50 px-3 py-2 rounded-md">
-                      {checklist.ubicacion_dolor || 'No especificada'}
+                      {checklist.zona_anatomica_dolor || 'No especificada'}
                     </p>
                   </div>
                 </>
@@ -168,28 +447,28 @@ const ChecklistDetailModal = ({ checklist, onClose }) => {
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">Mecanismo de lesión</label>
                 <p className="text-lg text-gray-900 bg-blue-50 px-3 py-2 rounded-md">
-                  {formatMecanismoLesion(checklist.mecanismo_lesion)}
+                  {formatMecanismoLesion(checklist.mecanismo_dolor_evaluado)}
                 </p>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">Momento de aparición</label>
                 <p className="text-lg text-gray-900 bg-blue-50 px-3 py-2 rounded-md">
-                  {formatMomentoAparicion(checklist.momento_aparicion)}
+                  {formatMomentoAparicion(checklist.momento_aparicion_molestia)}
                 </p>
               </div>
               
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-600 mb-1">Diagnóstico presuntivo</label>
                 <p className="text-lg text-gray-900 bg-blue-50 px-3 py-2 rounded-md min-h-[2.5rem]">
-                  {checklist.diagnostico_presuntivo || 'No especificado'}
+                  {checklist.diagnostico_presuntivo_postpartido || 'No especificado'}
                 </p>
               </div>
               
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-600 mb-1">Tratamiento inmediato aplicado</label>
                 <p className="text-lg text-gray-900 bg-blue-50 px-3 py-2 rounded-md min-h-[2.5rem]">
-                  {checklist.tratamiento_inmediato || 'No se aplicó tratamiento inmediato'}
+                  {checklist.tratamiento_inmediato_realizado || 'No se aplicó tratamiento inmediato'}
                 </p>
               </div>
             </div>
@@ -205,19 +484,10 @@ const ChecklistDetailModal = ({ checklist, onClose }) => {
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">Observaciones del jugador</label>
-                <div className="bg-purple-50 p-4 rounded-md">
-                  <p className="text-gray-900 whitespace-pre-wrap">
-                    {checklist.observaciones_jugador || 'Sin observaciones del jugador.'}
-                  </p>
-                </div>
-              </div>
-              
-              <div>
                 <label className="block text-sm font-medium text-gray-600 mb-2">Observaciones del kinesiólogo</label>
                 <div className="bg-purple-50 p-4 rounded-md">
                   <p className="text-gray-900 whitespace-pre-wrap">
-                    {checklist.observaciones_kinesiologo || 'Sin observaciones del kinesiólogo.'}
+                    {checklist.observaciones_checklist || 'Sin observaciones del kinesiólogo.'}
                   </p>
                 </div>
               </div>
@@ -236,17 +506,17 @@ const ChecklistDetailModal = ({ checklist, onClose }) => {
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">Realizado por</label>
                 <p className="text-lg font-semibold text-gray-900">
-                  {checklist.kinesiologo?.nombre || checklist.realizado_por || 'No especificado'}
+                  {checklist.realizado_por_nombre || checklist.kinesiologo?.nombre || checklist.realizado_por || '1'}
                 </p>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">Fecha de registro</label>
                 <p className="text-lg text-gray-900">
-                  {formatDate(checklist.fecha_registro)}
+                  {formatDate(checklist.fecha_registro_checklist || checklist.fecha_registro)}
                 </p>
                 <p className="text-sm text-gray-500">
-                  {checklist.fecha_registro && new Date(checklist.fecha_registro).toLocaleTimeString('es-CL')}
+                  {(checklist.fecha_registro_checklist || checklist.fecha_registro) && new Date(checklist.fecha_registro_checklist || checklist.fecha_registro).toLocaleTimeString('es-CL')}
                 </p>
               </div>
             </div>
@@ -262,10 +532,7 @@ const ChecklistDetailModal = ({ checklist, onClose }) => {
             Cerrar
           </button>
           <button
-            onClick={() => {
-              // Aquí se podría implementar la funcionalidad de imprimir o descargar
-              window.print();
-            }}
+            onClick={handlePrint}
             className="px-6 py-2 bg-wanderers-green text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

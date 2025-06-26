@@ -361,9 +361,16 @@ class ChecklistPostPartido(models.Model):
     ]
     
     OPCIONES_INTENSIDAD = [
-        ('LEVE', 'Leve'),
-        ('MODERADO', 'Moderado'),
-        ('SEVERO', 'Severo'),
+        ('1', '1'),
+        ('2', '2'),
+        ('3', '3'),
+        ('4', '4'),
+        ('5', '5'),
+        ('6', '6'),
+        ('7', '7'),
+        ('8', '8'),
+        ('9', '9'),
+        ('10', '10'),
     ]
     
     OPCIONES_MECANISMO = [
@@ -386,7 +393,7 @@ class ChecklistPostPartido(models.Model):
     realizado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="checklists_completados")
     
     dolor_molestia = models.BooleanField(default=False, verbose_name="¿Sintió Dolor/Molestia?")
-    intensidad_dolor = models.CharField(max_length=20, choices=OPCIONES_INTENSIDAD, null=True, blank=True)
+    intensidad_dolor = models.CharField(max_length=2, choices=OPCIONES_INTENSIDAD, null=True, blank=True)
     mecanismo_dolor_evaluado = models.CharField(max_length=20, choices=OPCIONES_MECANISMO, null=True, blank=True)
     momento_aparicion_molestia = models.CharField(max_length=20, choices=OPCIONES_MOMENTO, null=True, blank=True)
     zona_anatomica_dolor = models.CharField(max_length=20, choices=OPCIONES_ZONA, null=True, blank=True)

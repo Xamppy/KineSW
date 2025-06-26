@@ -14,6 +14,13 @@ const HistorialChecklistsPage = () => {
   const [error, setError] = useState(null);
   const [selectedChecklist, setSelectedChecklist] = useState(null);
 
+  // Función para extraer solo el nombre sin el RUT
+  const extractNombreSinRut = (nombreCompleto) => {
+    if (!nombreCompleto) return '';
+    // Remover el RUT entre paréntesis al final
+    return nombreCompleto.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  };
+
   // Cargar checklists desde la API
   useEffect(() => {
     fetchChecklists();
@@ -49,10 +56,12 @@ const HistorialChecklistsPage = () => {
 
     if (searchTerm) {
       filtered = filtered.filter(checklist => {
-        const jugadorNombre = `${checklist.jugador?.nombres || ''} ${checklist.jugador?.apellidos || ''}`.toLowerCase();
-        const kinesiologo = checklist.kinesiologo?.nombre?.toLowerCase() || '';
-        const rival = checklist.rival?.toLowerCase() || '';
-        const observaciones = checklist.observaciones_kinesiologo?.toLowerCase() || '';
+        const jugadorNombre = checklist.jugador_nombre?.toLowerCase() || 
+                            `${checklist.jugador_detalle?.nombres || ''} ${checklist.jugador_detalle?.apellidos || ''}`.toLowerCase() ||
+                            `${checklist.jugador?.nombres || ''} ${checklist.jugador?.apellidos || ''}`.toLowerCase();
+        const kinesiologo = checklist.realizado_por_nombre?.toLowerCase() || checklist.kinesiologo?.nombre?.toLowerCase() || '';
+        const rival = checklist.rival_partido?.toLowerCase() || '';
+        const observaciones = checklist.observaciones_checklist?.toLowerCase() || checklist.observaciones_kinesiologo?.toLowerCase() || '';
         
         return jugadorNombre.includes(searchTerm.toLowerCase()) ||
                kinesiologo.includes(searchTerm.toLowerCase()) ||
@@ -79,7 +88,7 @@ const HistorialChecklistsPage = () => {
     filteredChecklists.forEach(checklist => {
       // Crear clave única para el partido (fecha + rival)
       const fechaPartido = checklist.fecha_partido;
-      const rival = checklist.rival || 'Sin rival especificado';
+      const rival = checklist.rival_partido || 'Sin rival especificado';
       const partidoId = `${fechaPartido}_${rival}`;
       
       // Inicializar partido si no existe
@@ -94,7 +103,9 @@ const HistorialChecklistsPage = () => {
       }
       
       // Agregar jugador con su checklist al partido
-      const jugadorNombre = `${checklist.jugador?.nombres || ''} ${checklist.jugador?.apellidos || ''}`.trim();
+      const jugadorNombre = extractNombreSinRut(checklist.jugador_nombre) || 
+                           `${checklist.jugador_detalle?.nombres || ''} ${checklist.jugador_detalle?.apellidos || ''}`.trim() ||
+                           `${checklist.jugador?.nombres || ''} ${checklist.jugador?.apellidos || ''}`.trim();
       agrupados[partidoId].jugadoresConChecklist.push({
         jugadorId: checklist.jugador?.id,
         nombreJugador: jugadorNombre,
@@ -385,7 +396,7 @@ const HistorialChecklistsPage = () => {
                               <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                                 <span className="text-gray-600">Evaluado por:</span>
                                 <span className="text-gray-800 text-xs">
-                                  {jugadorChecklist.checklistData.kinesiologo?.nombre || 'N/A'}
+                                  {jugadorChecklist.checklistData.realizado_por_nombre || jugadorChecklist.checklistData.kinesiologo?.nombre || jugadorChecklist.checklistData.realizado_por || 'N/A'}
                                 </span>
                               </div>
                             </div>

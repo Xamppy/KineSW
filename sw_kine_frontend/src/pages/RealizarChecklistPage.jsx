@@ -27,7 +27,7 @@ const RealizarChecklistPage = () => {
     observaciones_checklist: ''
   });
 
-  // Constantes originales para las opciones con colores
+  // Opciones corregidas que coinciden con el modelo backend
   const OPCIONES_INTENSIDAD = [
     { valor: '1', etiqueta: '1', color: 'bg-green-500' },
     { valor: '2', etiqueta: '2', color: 'bg-green-500' },
@@ -42,23 +42,31 @@ const RealizarChecklistPage = () => {
   ];
 
   const OPCIONES_ZONA = [
-    'ISQUIOTIBIALES',
-    'CUÁDRICEPS',
-    'ADUCTORES',
-    'GEMELOS',
-    'RODILLA',
-    'TOBILLO',
-    'CADERA',
-    'LUMBAR',
+    'CABEZA',
+    'CUELLO', 
     'HOMBRO',
-    'PIE',
-    'OTRO'
+    'BRAZO',
+    'CODO',
+    'ANTEBRAZO',
+    'MUÑECA',
+    'MANO',
+    'TORAX',
+    'ABDOMEN',
+    'ESPALDA',
+    'CADERA',
+    'MUSLO',
+    'RODILLA',
+    'PIERNA',
+    'TOBILLO',
+    'PIE'
   ];
 
   const OPCIONES_MECANISMO = [
     { valor: 'SOBRECARGA', etiqueta: 'Sobrecarga' },
     { valor: 'TRAUMATISMO', etiqueta: 'Traumatismo' },
-    { valor: 'OTRO', etiqueta: 'Otro' }
+    { valor: 'CONTACTO', etiqueta: 'Contacto' },
+    { valor: 'GESTO_TECNICO', etiqueta: 'Gesto Técnico' },
+    { valor: 'INDETERMINADO', etiqueta: 'Indeterminado' }
   ];
 
   const OPCIONES_MOMENTO = [
@@ -150,14 +158,6 @@ const RealizarChecklistPage = () => {
         tratamiento_inmediato_realizado: ''
       }));
     }
-
-    // Limpiar campo "otra zona" si se cambia de "OTRO" a otra opción
-    if (name === 'zona_anatomica_dolor' && value !== 'OTRO') {
-      setChecklistData(prev => ({
-        ...prev,
-        otra_zona_anatomica: ''
-      }));
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -179,10 +179,7 @@ const RealizarChecklistPage = () => {
 
       if (checklistData.dolor_molestia) {
         payload.intensidad_dolor = checklistData.intensidad_dolor;
-        // Si seleccionó "OTRO", usar el valor del campo de texto, sino usar la zona seleccionada
-        payload.zona_anatomica_dolor = checklistData.zona_anatomica_dolor === 'OTRO' 
-          ? checklistData.otra_zona_anatomica 
-          : checklistData.zona_anatomica_dolor;
+        payload.zona_anatomica_dolor = checklistData.zona_anatomica_dolor;
         payload.diagnostico_presuntivo_postpartido = checklistData.diagnostico_presuntivo_postpartido || null;
         payload.momento_aparicion_molestia = checklistData.momento_aparicion_molestia || null;
         payload.tratamiento_inmediato_realizado = checklistData.tratamiento_inmediato_realizado || null;
@@ -190,6 +187,8 @@ const RealizarChecklistPage = () => {
 
       payload.mecanismo_dolor_evaluado = checklistData.dolor_molestia ? checklistData.mecanismo_dolor_evaluado : null;
       payload.observaciones_checklist = checklistData.observaciones_checklist || null;
+      
+      console.log('Payload enviado:', payload); // Debug
       
       await createChecklistPartido(payload);
       
@@ -204,7 +203,14 @@ const RealizarChecklistPage = () => {
       
     } catch (err) {
       console.error('Error al guardar checklist:', err);
-      alert('Error al guardar el checklist. Por favor intente nuevamente.');
+      
+      // Mostrar mensaje de error más detallado
+      if (err.response && err.response.data) {
+        console.error('Detalles del error:', err.response.data);
+        alert(`Error al guardar el checklist: ${JSON.stringify(err.response.data)}`);
+      } else {
+        alert('Error al guardar el checklist. Por favor intente nuevamente.');
+      }
     } finally {
       setSaving(false);
     }
@@ -344,7 +350,7 @@ const RealizarChecklistPage = () => {
           )}
         </div>
 
-        {/* Formulario de Checklist (diseño original) */}
+        {/* Formulario de Checklist */}
         {!jugadorSeleccionado ? (
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
             <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -378,317 +384,272 @@ const RealizarChecklistPage = () => {
                     <span className="font-medium">{jugadorSeleccionado.division_nombre}</span>
                   </div>
                   <div className="bg-gray-50 p-3 rounded-md">
-                    <span className="block text-gray-500">Número de Ficha</span>
-                    <span className="font-medium">#{jugadorSeleccionado.numero_ficha}</span>
+                    <span className="block text-gray-500">Edad</span>
+                    <span className="font-medium">{jugadorSeleccionado.edad || 'N/A'} años</span>
                   </div>
                 </div>
 
-                {/* Sección: Evaluación del Dolor */}
-                <section>
-                  <h3 className="text-lg font-semibold text-wanderers-green mb-4">
-                    Evaluación del Dolor
-                  </h3>
-                  <div className="space-y-6">
-                    {/* Radio buttons de dolor/molestia */}
-                    <div className="bg-gray-50 rounded-lg p-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-3">
-                        ¿Sintió Dolor o Molestia?
+                {/* Pregunta principal sobre dolor/molestia */}
+                <section className="mb-8">
+                  <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-lg">
+                    <h3 className="text-lg font-semibold text-wanderers-green mb-4">
+                      ¿El jugador sintió dolor o molestia durante el partido?
+                    </h3>
+                    
+                    <div className="flex items-center space-x-6">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="dolor_molestia"
+                          value="false"
+                          checked={!checklistData.dolor_molestia}
+                          onChange={() => setChecklistData(prev => ({ ...prev, dolor_molestia: false }))}
+                          className="w-4 h-4 text-wanderers-green focus:ring-wanderers-green"
+                        />
+                        <span className="ml-2 text-base font-medium text-gray-900">No</span>
                       </label>
-                      <div className="flex items-center space-x-6">
-                        <div className="flex items-center">
-                          <input
-                            type="radio"
-                            id="dolor_molestia_si"
-                            name="dolor_molestia"
-                            checked={checklistData.dolor_molestia === true}
-                            onChange={() => setChecklistData(prev => ({
-                              ...prev,
-                              dolor_molestia: true
-                            }))}
-                            className="focus:ring-wanderers-green h-4 w-4 text-wanderers-green border-gray-300"
-                          />
-                          <label htmlFor="dolor_molestia_si" className="ml-3 block text-sm font-medium text-gray-700">
-                            Sí
-                          </label>
-                        </div>
-                        <div className="flex items-center">
-                          <input
-                            type="radio"
-                            id="dolor_molestia_no"
-                            name="dolor_molestia"
-                            checked={checklistData.dolor_molestia === false}
-                            onChange={() => setChecklistData(prev => ({
-                              ...prev,
-                                                           dolor_molestia: false,
-                             intensidad_dolor: '',
-                             zona_anatomica_dolor: '',
-                             otra_zona_anatomica: '',
-                             mecanismo_dolor_evaluado: 'SOBRECARGA',
-                             diagnostico_presuntivo_postpartido: '',
-                             momento_aparicion_molestia: 'PRIMER_TIEMPO',
-                             tratamiento_inmediato_realizado: ''
-                            }))}
-                            className="focus:ring-wanderers-green h-4 w-4 text-wanderers-green border-gray-300"
-                          />
-                          <label htmlFor="dolor_molestia_no" className="ml-3 block text-sm font-medium text-gray-700">
-                            No
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Campos condicionales si hay dolor */}
-                    {checklistData.dolor_molestia && (
-                      <div className="space-y-6">
-                        {/* Intensidad del Dolor */}
-                        <div>
-                          <label className="block text-sm font-medium text-wanderers-green mb-3">
-                            Intensidad del Dolor *
-                          </label>
-                          <div className="space-y-2">
-                            {/* Barra de semáforo */}
-                            <div className="flex h-2 mb-4">
-                              <div className="flex-1 bg-green-500 rounded-l"></div>
-                              <div className="flex-1 bg-yellow-500"></div>
-                              <div className="flex-1 bg-red-500 rounded-r"></div>
-                            </div>
-                            <div className="text-xs flex justify-between mb-4">
-                              <span className="text-green-700">Leve (1-3)</span>
-                              <span className="text-yellow-700">Moderado (4-7)</span>
-                              <span className="text-red-700">Severo (8-10)</span>
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
-                              {OPCIONES_INTENSIDAD.map(({ valor, etiqueta, color }) => (
-                                <div
-                                  key={valor}
-                                  className={`
-                                    relative flex items-center justify-center p-4 border rounded-lg cursor-pointer transition-all duration-200
-                                    ${checklistData.intensidad_dolor === valor 
-                                      ? `${color} border-gray-800 text-white` 
-                                      : 'border-gray-200 hover:border-gray-400'}
-                                  `}
-                                  onClick={() => setChecklistData(prev => ({
-                                    ...prev,
-                                    intensidad_dolor: valor
-                                  }))}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="intensidad_dolor"
-                                    value={valor}
-                                    checked={checklistData.intensidad_dolor === valor}
-                                    onChange={() => {}}
-                                    className="sr-only"
-                                    required
-                                  />
-                                  <span className={`text-lg font-bold ${checklistData.intensidad_dolor === valor ? 'text-white' : 'text-gray-700'}`}>
-                                    {etiqueta}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                                                 {/* Zona Anatómica */}
-                         <div>
-                           <label htmlFor="zona_anatomica_dolor" className="block text-sm font-medium text-wanderers-green mb-3">
-                             Zona Anatómica *
-                           </label>
-                           <select
-                             id="zona_anatomica_dolor"
-                             name="zona_anatomica_dolor"
-                             value={checklistData.zona_anatomica_dolor}
-                             onChange={handleChecklistChange}
-                             className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-wanderers-green focus:border-wanderers-green rounded-md"
-                             required
-                           >
-                             <option value="">Seleccione una zona</option>
-                             {OPCIONES_ZONA.map((zona) => (
-                               <option key={zona} value={zona}>
-                                 {zona}
-                               </option>
-                             ))}
-                           </select>
-
-                           {/* Campo de texto condicional para "OTRO" */}
-                           {checklistData.zona_anatomica_dolor === 'OTRO' && (
-                             <div className="mt-3">
-                               <label htmlFor="otra_zona_anatomica" className="block text-sm font-medium text-gray-700 mb-1">
-                                 Especifique la zona anatómica *
-                               </label>
-                               <input
-                                 type="text"
-                                 id="otra_zona_anatomica"
-                                 name="otra_zona_anatomica"
-                                 value={checklistData.otra_zona_anatomica}
-                                 onChange={handleChecklistChange}
-                                 className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-wanderers-green focus:border-wanderers-green"
-                                 placeholder="Ej: Clavícula, Costilla, etc."
-                                 required
-                               />
-                             </div>
-                           )}
-                         </div>
-
-                        {/* Momento de Aparición */}
-                        <div>
-                          <label className="block text-sm font-medium text-wanderers-green mb-3">
-                            Momento de Aparición *
-                          </label>
-                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                            {OPCIONES_MOMENTO.map(({ valor, etiqueta }) => (
-                              <div
-                                key={valor}
-                                className={`
-                                  relative flex items-center justify-center p-4 border rounded-lg cursor-pointer
-                                  ${checklistData.momento_aparicion_molestia === valor 
-                                    ? 'border-wanderers-green bg-wanderers-green text-white' 
-                                    : 'border-gray-200 hover:border-wanderers-green hover:bg-gray-50'}
-                                `}
-                                onClick={() => setChecklistData(prev => ({
-                                  ...prev,
-                                  momento_aparicion_molestia: valor
-                                }))}
-                              >
-                                <input
-                                  type="radio"
-                                  name="momento_aparicion_molestia"
-                                  value={valor}
-                                  checked={checklistData.momento_aparicion_molestia === valor}
-                                  onChange={() => {}}
-                                  className="sr-only"
-                                  required
-                                />
-                                <span className={`text-sm font-medium ${checklistData.momento_aparicion_molestia === valor ? 'text-white' : 'text-gray-700'}`}>
-                                  {etiqueta}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Diagnóstico Presuntivo */}
-                        <div>
-                          <label htmlFor="diagnostico_presuntivo_postpartido" className="block text-sm font-medium text-wanderers-green mb-1">
-                            Diagnóstico Presuntivo
-                          </label>
-                          <textarea
-                            id="diagnostico_presuntivo_postpartido"
-                            name="diagnostico_presuntivo_postpartido"
-                            value={checklistData.diagnostico_presuntivo_postpartido}
-                            onChange={handleChecklistChange}
-                            rows={3}
-                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-wanderers-green focus:border-wanderers-green"
-                            placeholder="Describa el diagnóstico presuntivo..."
-                          />
-                        </div>
-
-                        {/* Tratamiento Inmediato */}
-                        <div>
-                          <label htmlFor="tratamiento_inmediato_realizado" className="block text-sm font-medium text-wanderers-green mb-1">
-                            Tratamiento Inmediato Realizado
-                          </label>
-                          <textarea
-                            id="tratamiento_inmediato_realizado"
-                            name="tratamiento_inmediato_realizado"
-                            value={checklistData.tratamiento_inmediato_realizado}
-                            onChange={handleChecklistChange}
-                            rows={3}
-                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-wanderers-green focus:border-wanderers-green"
-                            placeholder="Describa el tratamiento realizado..."
-                          />
-                        </div>
-
-                        {/* Mecanismo del Dolor/Lesión */}
-                        <div className="border-t border-gray-200 pt-6">
-                          <label className="block text-sm font-medium text-wanderers-green mb-3">
-                            Posible mecanismo de lesión (Opcional)
-                          </label>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            {OPCIONES_MECANISMO.map(({ valor, etiqueta }) => (
-                              <div
-                                key={valor}
-                                className={`
-                                  relative flex items-center justify-center p-4 border rounded-lg cursor-pointer
-                                  ${checklistData.mecanismo_dolor_evaluado === valor 
-                                    ? 'border-wanderers-green bg-wanderers-green text-white' 
-                                    : 'border-gray-200 hover:border-wanderers-green hover:bg-gray-50'}
-                                `}
-                                onClick={() => setChecklistData(prev => ({
-                                  ...prev,
-                                  mecanismo_dolor_evaluado: valor
-                                }))}
-                              >
-                                <input
-                                  type="radio"
-                                  name="mecanismo_dolor_evaluado"
-                                  value={valor}
-                                  checked={checklistData.mecanismo_dolor_evaluado === valor}
-                                  onChange={() => {}}
-                                  className="sr-only"
-                                />
-                                <span className={`text-sm font-medium ${checklistData.mecanismo_dolor_evaluado === valor ? 'text-white' : 'text-gray-700'}`}>
-                                  {etiqueta}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Observaciones Generales */}
-                    <div className="border-t border-gray-200 pt-6">
-                      <label htmlFor="observaciones_checklist" className="block text-sm font-medium text-wanderers-green mb-1">
-                        Observaciones Generales
+                      
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="dolor_molestia"
+                          value="true"
+                          checked={checklistData.dolor_molestia}
+                          onChange={() => setChecklistData(prev => ({ ...prev, dolor_molestia: true }))}
+                          className="w-4 h-4 text-wanderers-green focus:ring-wanderers-green"
+                        />
+                        <span className="ml-2 text-base font-medium text-gray-900">Sí</span>
                       </label>
-                      <textarea
-                        id="observaciones_checklist"
-                        name="observaciones_checklist"
-                        value={checklistData.observaciones_checklist}
-                        onChange={handleChecklistChange}
-                        rows={4}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-wanderers-green focus:border-wanderers-green"
-                        placeholder="Agregue cualquier observación adicional..."
-                      />
                     </div>
                   </div>
                 </section>
+
+                {/* Campos condicionales si hay dolor/molestia */}
+                {checklistData.dolor_molestia && (
+                  <section className="mb-8 space-y-8">
+                    <h3 className="text-xl font-semibold text-wanderers-green mb-6">
+                      Detalles del Dolor/Molestia
+                    </h3>
+
+                    {/* Intensidad del Dolor */}
+                    <div>
+                      <label className="block text-sm font-medium text-wanderers-green mb-3">
+                        Intensidad del Dolor *
+                      </label>
+                      <div className="space-y-2">
+                        {/* Barra de semáforo */}
+                        <div className="flex h-2 mb-4">
+                          <div className="flex-1 bg-green-500 rounded-l"></div>
+                          <div className="flex-1 bg-yellow-500"></div>
+                          <div className="flex-1 bg-red-500 rounded-r"></div>
+                        </div>
+                        <div className="text-xs flex justify-between mb-4">
+                          <span className="text-green-700">Leve (1-3)</span>
+                          <span className="text-yellow-700">Moderado (4-7)</span>
+                          <span className="text-red-700">Severo (8-10)</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
+                          {OPCIONES_INTENSIDAD.map(({ valor, etiqueta, color }) => (
+                            <div
+                              key={valor}
+                              className={`
+                                relative flex items-center justify-center p-4 border rounded-lg cursor-pointer transition-all duration-200
+                                ${checklistData.intensidad_dolor === valor 
+                                  ? `${color} border-gray-800 text-white` 
+                                  : 'border-gray-200 hover:border-gray-400'}
+                              `}
+                              onClick={() => setChecklistData(prev => ({
+                                ...prev,
+                                intensidad_dolor: valor
+                              }))}
+                            >
+                              <input
+                                type="radio"
+                                name="intensidad_dolor"
+                                value={valor}
+                                checked={checklistData.intensidad_dolor === valor}
+                                onChange={() => {}}
+                                className="sr-only"
+                                required
+                              />
+                              <span className={`text-lg font-bold ${checklistData.intensidad_dolor === valor ? 'text-white' : 'text-gray-700'}`}>
+                                {etiqueta}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Zona Anatómica - Actualizada para usar opciones correctas */}
+                    <div>
+                      <label htmlFor="zona_anatomica_dolor" className="block text-sm font-medium text-wanderers-green mb-3">
+                        Zona Anatómica *
+                      </label>
+                      <select
+                        id="zona_anatomica_dolor"
+                        name="zona_anatomica_dolor"
+                        value={checklistData.zona_anatomica_dolor}
+                        onChange={handleChecklistChange}
+                        className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-wanderers-green focus:border-wanderers-green rounded-md"
+                        required
+                      >
+                        <option value="">Seleccione una zona</option>
+                        {OPCIONES_ZONA.map((zona) => (
+                          <option key={zona} value={zona}>
+                            {zona}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Momento de Aparición */}
+                    <div>
+                      <label className="block text-sm font-medium text-wanderers-green mb-3">
+                        Momento de Aparición *
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        {OPCIONES_MOMENTO.map(({ valor, etiqueta }) => (
+                          <div
+                            key={valor}
+                            className={`
+                              relative flex items-center justify-center p-4 border rounded-lg cursor-pointer
+                              ${checklistData.momento_aparicion_molestia === valor 
+                                ? 'border-wanderers-green bg-wanderers-green text-white' 
+                                : 'border-gray-200 hover:border-wanderers-green hover:bg-gray-50'}
+                            `}
+                            onClick={() => setChecklistData(prev => ({
+                              ...prev,
+                              momento_aparicion_molestia: valor
+                            }))}
+                          >
+                            <input
+                              type="radio"
+                              name="momento_aparicion_molestia"
+                              value={valor}
+                              checked={checklistData.momento_aparicion_molestia === valor}
+                              onChange={() => {}}
+                              className="sr-only"
+                              required
+                            />
+                            <span className={`text-sm font-medium ${checklistData.momento_aparicion_molestia === valor ? 'text-white' : 'text-gray-700'}`}>
+                              {etiqueta}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Diagnóstico Presuntivo */}
+                    <div>
+                      <label htmlFor="diagnostico_presuntivo_postpartido" className="block text-sm font-medium text-wanderers-green mb-1">
+                        Diagnóstico Presuntivo
+                      </label>
+                      <textarea
+                        id="diagnostico_presuntivo_postpartido"
+                        name="diagnostico_presuntivo_postpartido"
+                        value={checklistData.diagnostico_presuntivo_postpartido}
+                        onChange={handleChecklistChange}
+                        rows={3}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-wanderers-green focus:border-wanderers-green"
+                        placeholder="Describa el diagnóstico presuntivo..."
+                      />
+                    </div>
+
+                    {/* Tratamiento Inmediato */}
+                    <div>
+                      <label htmlFor="tratamiento_inmediato_realizado" className="block text-sm font-medium text-wanderers-green mb-1">
+                        Tratamiento Inmediato Realizado
+                      </label>
+                      <textarea
+                        id="tratamiento_inmediato_realizado"
+                        name="tratamiento_inmediato_realizado"
+                        value={checklistData.tratamiento_inmediato_realizado}
+                        onChange={handleChecklistChange}
+                        rows={3}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-wanderers-green focus:border-wanderers-green"
+                        placeholder="Describa el tratamiento realizado..."
+                      />
+                    </div>
+
+                    {/* Mecanismo del Dolor/Lesión */}
+                    <div className="border-t border-gray-200 pt-6">
+                      <label className="block text-sm font-medium text-wanderers-green mb-3">
+                        Posible mecanismo de lesión (Opcional)
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {OPCIONES_MECANISMO.map(({ valor, etiqueta }) => (
+                          <div
+                            key={valor}
+                            className={`
+                              relative flex items-center justify-center p-4 border rounded-lg cursor-pointer
+                              ${checklistData.mecanismo_dolor_evaluado === valor 
+                                ? 'border-wanderers-green bg-wanderers-green text-white' 
+                                : 'border-gray-200 hover:border-wanderers-green hover:bg-gray-50'}
+                            `}
+                            onClick={() => setChecklistData(prev => ({
+                              ...prev,
+                              mecanismo_dolor_evaluado: valor
+                            }))}
+                          >
+                            <input
+                              type="radio"
+                              name="mecanismo_dolor_evaluado"
+                              value={valor}
+                              checked={checklistData.mecanismo_dolor_evaluado === valor}
+                              onChange={() => {}}
+                              className="sr-only"
+                            />
+                            <span className={`text-sm font-medium ${checklistData.mecanismo_dolor_evaluado === valor ? 'text-white' : 'text-gray-700'}`}>
+                              {etiqueta}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                )}
+
+                {/* Observaciones Generales */}
+                <div className="border-t border-gray-200 pt-6">
+                  <label htmlFor="observaciones_checklist" className="block text-sm font-medium text-wanderers-green mb-1">
+                    Observaciones Generales
+                  </label>
+                  <textarea
+                    id="observaciones_checklist"
+                    name="observaciones_checklist"
+                    value={checklistData.observaciones_checklist}
+                    onChange={handleChecklistChange}
+                    rows={4}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-wanderers-green focus:border-wanderers-green"
+                    placeholder="Agregue cualquier observación adicional..."
+                  />
+                </div>
               </div>
 
-              {/* Pie del formulario */}
-              <div className="px-4 py-4 sm:px-6 flex justify-between items-center bg-gray-50">
+              {/* Botones de acción */}
+              <div className="px-4 py-4 sm:px-6 flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setJugadorSeleccionado(null)}
-                  className="text-gray-600 hover:text-gray-800 font-medium"
-                  disabled={saving}
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 >
                   Cancelar
                 </button>
-
-                <div className="flex space-x-3">
-                  <button
-                    type="submit"
-                    className="bg-wanderers-green text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center font-medium"
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Guardando...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                        Guardar Checklist
-                      </>
-                    )}
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="bg-wanderers-green hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 flex items-center"
+                >
+                  {saving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Guardando...
+                    </>
+                  ) : (
+                    'Guardar Checklist'
+                  )}
+                </button>
               </div>
             </form>
           </div>

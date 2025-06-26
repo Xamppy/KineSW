@@ -9,4 +9,4 @@ django-filter==24.1
 django-multiselectfield==0.1.13
 django-cors-headers==4.3.1
 djangorestframework-simplejwt==5.3.1
-Pillow==10.2.0 
+Pillow==11.2.1 

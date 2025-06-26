@@ -4,9 +4,11 @@ import { getPartidos, createPartido } from '../services/api';
 
 const PartidosListPage = () => {
   const [partidos, setPartidos] = useState([]);
+  const [partidosFiltrados, setPartidosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [mostrarDatosPrueba, setMostrarDatosPrueba] = useState(false);
   const [formData, setFormData] = useState({
     fecha: '',
     rival: '',
@@ -15,9 +17,25 @@ const PartidosListPage = () => {
   const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
 
+  // Lista de equipos que se consideran datos de prueba
+  const EQUIPOS_PRUEBA = [
+    'Universidad de Chile',
+    'Colo-Colo', 
+    'Universidad Católica'
+  ];
+
+  // Función para identificar si un partido es de prueba
+  const esPartidoDePrueba = (partido) => {
+    return EQUIPOS_PRUEBA.includes(partido.rival);
+  };
+
   useEffect(() => {
     cargarPartidos();
   }, []);
+
+  useEffect(() => {
+    filtrarPartidos();
+  }, [partidos, mostrarDatosPrueba]);
 
   const cargarPartidos = async () => {
     try {
@@ -29,6 +47,15 @@ const PartidosListPage = () => {
       setError('Error al cargar los partidos');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const filtrarPartidos = () => {
+    if (mostrarDatosPrueba) {
+      setPartidosFiltrados(partidos);
+    } else {
+      const partidosReales = partidos.filter(partido => !esPartidoDePrueba(partido));
+      setPartidosFiltrados(partidosReales);
     }
   };
 
@@ -100,9 +127,11 @@ const PartidosListPage = () => {
     );
   }
 
+  const partidosDePrueba = partidos.filter(partido => esPartidoDePrueba(partido));
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-wanderers-green">
           Gestión de Partidos y Checklists
         </h1>
@@ -117,23 +146,75 @@ const PartidosListPage = () => {
         </button>
       </div>
 
-      {partidos.length === 0 ? (
+      {/* Toggle para mostrar/ocultar datos de prueba */}
+      <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-yellow-800">
+              Datos de Prueba
+            </h3>
+            <p className="text-sm text-yellow-700 mt-1">
+              {partidosDePrueba.length > 0 ? (
+                `Se encontraron ${partidosDePrueba.length} partidos de prueba (${partidosDePrueba.map(p => p.rival).join(', ')})`
+              ) : (
+                'No se encontraron datos de prueba'
+              )}
+            </p>
+          </div>
+          {partidosDePrueba.length > 0 && (
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={mostrarDatosPrueba}
+                onChange={(e) => setMostrarDatosPrueba(e.target.checked)}
+                className="sr-only"
+              />
+              <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                mostrarDatosPrueba ? 'bg-wanderers-green' : 'bg-gray-300'
+              }`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  mostrarDatosPrueba ? 'translate-x-6' : 'translate-x-1'
+                }`} />
+              </div>
+              <span className="ml-2 text-sm text-yellow-800">
+                {mostrarDatosPrueba ? 'Ocultar' : 'Mostrar'} datos de prueba
+              </span>
+            </label>
+          )}
+        </div>
+      </div>
+
+      {partidosFiltrados.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-500 text-lg">No hay partidos registrados</p>
-          <p className="text-gray-400">Crea tu primer partido para comenzar</p>
+          <p className="text-gray-500 text-lg">
+            {partidos.length === 0 ? 'No hay partidos registrados' : 'No hay partidos reales registrados'}
+          </p>
+          <p className="text-gray-400">
+            {partidos.length === 0 ? 'Crea tu primer partido para comenzar' : 'Los datos de prueba están ocultos. Usa el toggle de arriba para mostrarlos o crea un partido real.'}
+          </p>
         </div>
       ) : (
         <div className="grid gap-6">
-          {partidos.map((partido) => {
+          {partidosFiltrados.map((partido) => {
             const estadoInfo = getEstadoPartido(partido);
+            const esPrueba = esPartidoDePrueba(partido);
             
             return (
-              <div key={partido.id} className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
+              <div key={partido.id} className={`bg-white rounded-lg shadow-lg border p-6 ${
+                esPrueba ? 'border-yellow-300 bg-yellow-50/30' : 'border-gray-200'
+              }`}>
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      vs {partido.rival}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        vs {partido.rival}
+                      </h3>
+                      {esPrueba && (
+                        <span className="px-2 py-1 text-xs font-medium bg-yellow-200 text-yellow-800 rounded-full">
+                          PRUEBA
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center space-x-4 text-sm text-gray-600">
                       <span className="flex items-center">
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

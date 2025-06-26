@@ -238,6 +238,7 @@ class PartidoSerializer(serializers.ModelSerializer):
         return value
 
 class ChecklistPostPartidoSerializer(serializers.ModelSerializer):
+    jugador_detalle = JugadorSerializer(source='jugador', read_only=True)
     jugador_nombre = serializers.CharField(source='jugador.__str__', read_only=True)
     realizado_por_nombre = serializers.CharField(source='realizado_por.get_full_name', read_only=True)
     partido_detalle = PartidoSerializer(source='partido', read_only=True)
@@ -247,7 +248,7 @@ class ChecklistPostPartidoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChecklistPostPartido
         fields = [
-            'id', 'jugador', 'jugador_nombre', 'partido', 'partido_detalle',
+            'id', 'jugador', 'jugador_detalle', 'jugador_nombre', 'partido', 'partido_detalle',
             'fecha_partido', 'rival_partido', 'realizado_por', 'realizado_por_nombre',
             'dolor_molestia', 'intensidad_dolor', 'mecanismo_dolor_evaluado',
             'momento_aparicion_molestia', 'zona_anatomica_dolor',
