@@ -30,6 +30,14 @@ export const login = async (credentials) => {
     const response = await axiosInstance.post('/auth/login/', credentials);
     const { access_token, refresh_token, user } = response.data;
     
+    // Verificar que todos los datos necesarios estén presentes
+    if (!access_token) {
+      throw new Error('No se recibió access_token del servidor');
+    }
+    if (!user) {
+      throw new Error('No se recibieron datos del usuario del servidor');
+    }
+    
     // Guardar tokens y datos del usuario
     localStorage.setItem(ACCESS_TOKEN_KEY, access_token);
     localStorage.setItem(REFRESH_TOKEN_KEY, refresh_token);
@@ -41,7 +49,13 @@ export const login = async (credentials) => {
       user
     };
   } catch (error) {
-    throw error.response?.data || error;
+    if (error.response) {
+      throw error.response.data;
+    } else if (error.request) {
+      throw { error: 'No se pudo conectar con el servidor' };
+    } else {
+      throw { error: error.message };
+    }
   }
 };
 

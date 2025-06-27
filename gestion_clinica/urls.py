@@ -4,7 +4,7 @@ from .views import (
     DivisionViewSet, JugadorViewSet, AtencionKinesicaViewSet,
     LesionViewSet, ArchivoMedicoViewSet, ChecklistPostPartidoViewSet, PartidoViewSet,
     EstadoDiarioLesionViewSet, EstadosLesionListView, InformeLesionesView,
-    login_view, register_view
+    login_view, register_view, UserManagementViewSet
 )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -21,6 +21,8 @@ router.register(r'archivos', ArchivoMedicoViewSet)
 router.register(r'partidos', PartidoViewSet)
 router.register(r'checklists', ChecklistPostPartidoViewSet)
 router.register(r'estados-diarios', EstadoDiarioLesionViewSet)
+# Gestión de usuarios (solo administradores)
+router.register(r'usuarios', UserManagementViewSet, basename='usuarios')
 
 urlpatterns = [
     # URLs de la API

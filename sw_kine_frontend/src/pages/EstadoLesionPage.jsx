@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { getJugadoresConLesionActiva, addEstadoDiario, getHistorialDiarioLesion, finalizarLesion } from '../services/api';
 import { toast } from 'react-toastify';
+import { useAuth } from '../contexts/AuthContext';
 import HistorialLesionGraph from '../components/HistorialLesionGraph';
 import { getCurrentDate } from '../utils/dateUtils';
 
 const EstadoLesionPage = () => {
+  const { canWrite } = useAuth();
   const [jugadoresActivos, setJugadoresActivos] = useState([]);
   const [selectedJugador, setSelectedJugador] = useState(null);
   const [loadingJugadores, setLoadingJugadores] = useState(true);
@@ -643,11 +645,12 @@ const EstadoLesionPage = () => {
                       </div>
                     )}
 
-                    {/* Opciones de Estado */}
-                    <div className="space-y-4 mb-6">
-                      <h4 className="font-medium text-gray-900">Selecciona el estado de tratamiento de hoy:</h4>
-                      
-                      <div className="grid grid-cols-1 gap-3">
+                    {/* Opciones de Estado - Solo para usuarios con permisos de escritura */}
+                    {canWrite() && (
+                      <div className="space-y-4 mb-6">
+                        <h4 className="font-medium text-gray-900">Selecciona el estado de tratamiento de hoy:</h4>
+                        
+                        <div className="grid grid-cols-1 gap-3">
                         {/* Tratamiento en Camilla */}
                         <label className={`
                           relative flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200
@@ -755,68 +758,85 @@ const EstadoLesionPage = () => {
                             </div>
                           </div>
                         </label>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Botón de Guardar */}
-                    <div className="flex justify-end space-x-3 mb-6">
-                      <button
-                        onClick={() => setEstadoSeleccionadoHoy('')}
-                        disabled={!estadoSeleccionadoHoy || guardandoEstado}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wanderers-green disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Limpiar
-                      </button>
-                      
-                      {(() => {
-                        const fechaHoy = getCurrentDate();
-                        const estadoHoyExistente = historialJugador.find(estado => estado.fecha === fechaHoy);
+                    {/* Botón de Guardar - Solo para usuarios con permisos de escritura */}
+                    {canWrite() && (
+                      <div className="flex justify-end space-x-3 mb-6">
+                        <button
+                          onClick={() => setEstadoSeleccionadoHoy('')}
+                          disabled={!estadoSeleccionadoHoy || guardandoEstado}
+                          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wanderers-green disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Limpiar
+                        </button>
                         
-                        if (estadoHoyExistente) {
-                          return (
-                            <div className="flex items-center space-x-3">
-                              <div className="text-sm text-green-600 font-medium">
-                                ✅ Estado de hoy ya registrado
+                        {(() => {
+                          const fechaHoy = getCurrentDate();
+                          const estadoHoyExistente = historialJugador.find(estado => estado.fecha === fechaHoy);
+                          
+                          if (estadoHoyExistente) {
+                            return (
+                              <div className="flex items-center space-x-3">
+                                <div className="text-sm text-green-600 font-medium">
+                                  ✅ Estado de hoy ya registrado
+                                </div>
+                                <button
+                                  disabled={true}
+                                  className="bg-gray-400 text-white font-bold py-2 px-6 rounded-lg cursor-not-allowed flex items-center space-x-2"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span>Estado Registrado</span>
+                                </button>
                               </div>
-                              <button
-                                disabled={true}
-                                className="bg-gray-400 text-white font-bold py-2 px-6 rounded-lg cursor-not-allowed flex items-center space-x-2"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Estado Registrado</span>
-                              </button>
-                            </div>
+                            );
+                          }
+                          
+                          return (
+                            <button
+                              onClick={handleGuardarEstado}
+                              disabled={!estadoSeleccionadoHoy || guardandoEstado}
+                              className="bg-wanderers-green text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-wanderers-green-dark transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                            >
+                              {guardandoEstado ? (
+                                <>
+                                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  <span>Guardando...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span>Guardar Estado de Hoy</span>
+                                </>
+                              )}
+                            </button>
                           );
-                        }
-                        
-                        return (
-                          <button
-                            onClick={handleGuardarEstado}
-                            disabled={!estadoSeleccionadoHoy || guardandoEstado}
-                            className="bg-wanderers-green text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-wanderers-green-dark transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                          >
-                            {guardandoEstado ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>Guardando...</span>
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Guardar Estado de Hoy</span>
-                              </>
-                            )}
-                          </button>
-                        );
-                      })()}
-                    </div>
+                        })()}
+                      </div>
+                    )}
+
+                    {/* Mensaje informativo para usuarios de solo lectura */}
+                    {!canWrite() && (
+                      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center">
+                          <svg className="w-5 h-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <p className="text-blue-800 text-sm">
+                            Solo puedes visualizar el historial de tratamiento. No tienes permisos para registrar nuevos estados.
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Historial Visual */}
                     <div className="border-t border-gray-200 pt-6">
@@ -856,39 +876,41 @@ const EstadoLesionPage = () => {
                         </div>
                       )}
 
-                      {/* Botón Finalizar Lesión */}
-                      <div className="border-t border-gray-200 pt-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h5 className="text-sm font-medium text-gray-900">Gestión de Lesión</h5>
-                            <p className="text-xs text-gray-600 mt-1">
-                              Si el jugador está completamente recuperado, puedes finalizar la lesión
-                            </p>
+                      {/* Botón Finalizar Lesión - Solo para usuarios con permisos de escritura */}
+                      {canWrite() && (
+                        <div className="border-t border-gray-200 pt-6">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h5 className="text-sm font-medium text-gray-900">Gestión de Lesión</h5>
+                              <p className="text-xs text-gray-600 mt-1">
+                                Si el jugador está completamente recuperado, puedes finalizar la lesión
+                              </p>
+                            </div>
+                            <button
+                              onClick={handleFinalizarLesion}
+                              disabled={finalizandoLesion}
+                              className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                            >
+                              {finalizandoLesion ? (
+                                <>
+                                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  <span>Finalizando...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <span>Finalizar Lesión</span>
+                                </>
+                              )}
+                            </button>
                           </div>
-                          <button
-                            onClick={handleFinalizarLesion}
-                            disabled={finalizandoLesion}
-                            className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                          >
-                            {finalizandoLesion ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>Finalizando...</span>
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span>Finalizar Lesión</span>
-                              </>
-                            )}
-                          </button>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>

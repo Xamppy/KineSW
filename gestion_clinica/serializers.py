@@ -1,11 +1,143 @@
 from rest_framework import serializers
-from .models import Division, Jugador, AtencionKinesica, Lesion, ArchivoMedico, ChecklistPostPartido, Partido, validar_rut_chileno, EstadoDiarioLesion
+from .models import Division, Jugador, AtencionKinesica, Lesion, ArchivoMedico, ChecklistPostPartido, Partido, validar_rut_chileno, EstadoDiarioLesion, UserProfile
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import Group
 import re
 
 User = get_user_model()
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    """Serializer para el perfil extendido del usuario"""
+    class Meta:
+        model = UserProfile
+        fields = ['rut', 'telefono', 'cargo', 'activo', 'fecha_creacion', 'fecha_modificacion']
+        read_only_fields = ['fecha_creacion', 'fecha_modificacion']
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    """Serializer detallado para usuarios con perfil y grupos"""
+    profile = UserProfileSerializer(read_only=True)
+    groups = serializers.StringRelatedField(many=True, read_only=True)
+    role = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'full_name', 'is_active', 'is_staff', 'date_joined', 'groups', 'role', 'profile']
+        read_only_fields = ['username', 'date_joined']
+
+    def get_role(self, obj):
+        """Obtener el rol principal del usuario"""
+        groups = obj.groups.all()
+        if groups:
+            return groups.first().name
+        return None
+
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}".strip() or obj.username
+
+class UserRegistrationByAdminSerializer(serializers.ModelSerializer):
+    """Serializer para que los administradores registren nuevos usuarios"""
+    password = serializers.CharField(write_only=True, required=True)
+    password2 = serializers.CharField(write_only=True, required=True)
+    group_name = serializers.ChoiceField(
+        choices=[
+            ('Cuerpo médico', 'Cuerpo médico'),
+            ('Cuerpo técnico', 'Cuerpo técnico'),
+            ('Dirigencia', 'Dirigencia')
+        ],
+        required=True
+    )
+    rut = serializers.CharField(required=True)
+    telefono = serializers.CharField(required=False, allow_blank=True)
+    cargo = serializers.CharField(required=False, allow_blank=True)
+
+    class Meta:
+        model = User
+        fields = ['username', 'rut', 'password', 'password2', 'email', 'first_name', 'last_name', 'group_name', 'telefono', 'cargo']
+        extra_kwargs = {
+            'username': {'read_only': True}  # Se asignará automáticamente con el RUT
+        }
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({"password": "Las contraseñas no coinciden"})
+        
+        try:
+            validate_password(attrs['password'])
+        except ValidationError as e:
+            raise serializers.ValidationError({"password": list(e.messages)})
+
+        # Limpiar y validar el RUT
+        rut = attrs['rut']
+        try:
+            rut_limpio = validar_rut_chileno(rut)
+            # Convertir a formato de username (con guión)
+            if len(rut_limpio) >= 2:
+                cuerpo = rut_limpio[:-1]
+                dv = rut_limpio[-1]
+                rut_username = f"{cuerpo}-{dv}"
+            else:
+                rut_username = rut_limpio
+        except ValidationError as e:
+            raise serializers.ValidationError({"rut": str(e)})
+        
+        # Verificar si el RUT ya está en uso
+        if User.objects.filter(username=rut_username).exists():
+            raise serializers.ValidationError({"rut": "Este RUT ya está registrado"})
+
+        # Guardar el RUT en formato username
+        attrs['rut_limpio'] = rut_username
+        return attrs
+
+    def create(self, validated_data):
+        validated_data.pop('password2')
+        group_name = validated_data.pop('group_name')
+        rut_limpio = validated_data.pop('rut_limpio')
+        rut_original = validated_data.pop('rut')  # Guardar el RUT formateado
+        telefono = validated_data.pop('telefono', '')
+        cargo = validated_data.pop('cargo', '')
+        
+        # Usar el RUT limpio como username
+        user = User.objects.create_user(
+            username=rut_limpio,
+            email=validated_data['email'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+            password=validated_data['password']
+        )
+        
+        # Asignar al grupo correspondiente
+        try:
+            group = Group.objects.get(name=group_name)
+            user.groups.add(group)
+        except Group.DoesNotExist:
+            pass  # El grupo debería existir por las migraciones
+        
+        # Crear o actualizar el perfil del usuario
+        try:
+            if hasattr(user, 'profile'):
+                profile = user.profile
+                profile.rut = rut_original  # RUT formateado
+                profile.telefono = telefono
+                profile.cargo = cargo
+                profile.save()
+            else:
+                # Crear perfil si no existe
+                from .models import UserProfile
+                UserProfile.objects.create(
+                    user=user,
+                    rut=rut_original,
+                    telefono=telefono,
+                    cargo=cargo
+                )
+        except Exception as e:
+            # Si hay error con el perfil, eliminar el usuario creado
+            user.delete()
+            raise serializers.ValidationError(f"Error al crear perfil: {str(e)}")
+        
+        return user
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer para el modelo User con información completa"""
@@ -113,7 +245,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             )
             
             # Crear o obtener el grupo según el rol
-            from django.contrib.auth.models import Group
             grupo, _ = Group.objects.get_or_create(name=rol)
             user.groups.add(grupo)
             
@@ -129,10 +260,18 @@ class UserLoginSerializer(serializers.Serializer):
 
     def validate_rut(self, value):
         try:
-            # Limpiar y validar el RUT
+            # Primero validar el RUT (puede venir con formato)
             rut_limpio = re.sub(r'[^0-9kK]', '', value)
             validar_rut_chileno(rut_limpio)
-            return rut_limpio
+            
+            # Devolver el RUT en el formato que se usa como username
+            # Convertir de "19.976.194-3" a "19976194-3"
+            if len(rut_limpio) >= 2:
+                cuerpo = rut_limpio[:-1]
+                dv = rut_limpio[-1]
+                return f"{cuerpo}-{dv}"
+            else:
+                return rut_limpio
         except ValidationError as e:
             raise serializers.ValidationError(str(e))
         except Exception as e:

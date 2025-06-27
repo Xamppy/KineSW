@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getPartidos, createPartido } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const PartidosListPage = () => {
   const [partidos, setPartidos] = useState([]);
@@ -16,6 +17,7 @@ const PartidosListPage = () => {
   });
   const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
+  const { canWrite } = useAuth();
 
   // Lista de equipos que se consideran datos de prueba
   const EQUIPOS_PRUEBA = [
@@ -135,16 +137,38 @@ const PartidosListPage = () => {
         <h1 className="text-3xl font-bold text-wanderers-green">
           Gestión de Partidos y Checklists
         </h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-wanderers-green text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Crear Nuevo Partido
-        </button>
+        <div className="relative">
+          <button
+            onClick={canWrite() ? () => setShowModal(true) : undefined}
+            disabled={!canWrite()}
+            className={`px-6 py-2 rounded-lg transition-colors flex items-center ${
+              canWrite()
+                ? 'bg-wanderers-green text-white hover:bg-green-700'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+            title={!canWrite() ? 'No tienes permisos para crear partidos' : 'Crear Nuevo Partido'}
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Crear Nuevo Partido
+          </button>
+        </div>
       </div>
+
+      {/* Mensaje informativo para usuarios de solo lectura */}
+      {!canWrite() && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-blue-800 text-sm">
+              Solo puedes visualizar los partidos y checklists. No tienes permisos para crear nuevos partidos o gestionar convocatorias.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Toggle para mostrar/ocultar datos de prueba */}
       <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -244,26 +268,52 @@ const PartidosListPage = () => {
                 </div>
 
                 <div className="flex space-x-3">
-                  <Link
-                    to={`/partidos/${partido.id}/convocatoria`}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm"
-                  >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Gestionar Convocatoria
-                  </Link>
-
-                  {estadoInfo.estado === 'listo' && (
+                  {canWrite() ? (
                     <Link
-                      to={`/partidos/${partido.id}/checklist`}
-                      className="bg-wanderers-green text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center text-sm"
+                      to={`/partidos/${partido.id}/convocatoria`}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm"
                     >
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
-                      Realizar Checklists
+                      Gestionar Convocatoria
                     </Link>
+                  ) : (
+                    <button
+                      disabled
+                      className="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg cursor-not-allowed flex items-center text-sm"
+                      title="No tienes permisos para gestionar convocatorias"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      Gestionar Convocatoria
+                    </button>
+                  )}
+
+                  {estadoInfo.estado === 'listo' && (
+                    canWrite() ? (
+                      <Link
+                        to={`/partidos/${partido.id}/checklist`}
+                        className="bg-wanderers-green text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center text-sm"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        Realizar Checklists
+                      </Link>
+                    ) : (
+                      <button
+                        disabled
+                        className="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg cursor-not-allowed flex items-center text-sm"
+                        title="No tienes permisos para realizar checklists"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        Realizar Checklists
+                      </button>
+                    )
                   )}
 
                   {estadoInfo.estado === 'pasado' && (

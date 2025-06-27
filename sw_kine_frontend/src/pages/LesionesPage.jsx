@@ -1,7 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const LesionesPage = () => {
+  const { canWrite } = useAuth();
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -15,6 +18,20 @@ const LesionesPage = () => {
               <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
                 Registra y gestiona las lesiones de los jugadores
               </p>
+              
+              {/* Mensaje informativo para usuarios de solo lectura */}
+              {!canWrite() && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-blue-800 text-sm">
+                      Solo puedes visualizar el historial de lesiones. No tienes permisos para registrar nuevas lesiones.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -40,15 +57,28 @@ const LesionesPage = () => {
             </p>
 
             {/* Botón principal */}
-            <Link
-              to="/lesiones/nueva"
-              className="inline-flex items-center px-8 py-4 text-lg font-bold text-white bg-wanderers-green border border-transparent rounded-lg shadow-md hover:bg-wanderers-green-dark hover:shadow-lg transform hover:scale-105 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:ring-opacity-50"
-            >
-              <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Registrar Nueva Lesión
-            </Link>
+            {canWrite() ? (
+              <Link
+                to="/lesiones/nueva"
+                className="inline-flex items-center px-8 py-4 text-lg font-bold text-white bg-wanderers-green border border-transparent rounded-lg shadow-md hover:bg-wanderers-green-dark hover:shadow-lg transform hover:scale-105 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-wanderers-green focus:ring-opacity-50"
+              >
+                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Registrar Nueva Lesión
+              </Link>
+            ) : (
+              <button
+                disabled
+                className="inline-flex items-center px-8 py-4 text-lg font-bold text-gray-500 bg-gray-300 border border-transparent rounded-lg shadow-md cursor-not-allowed"
+                title="No tienes permisos para registrar nuevas lesiones"
+              >
+                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Registrar Nueva Lesión
+              </button>
+            )}
 
             {/* Información adicional */}
             <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">

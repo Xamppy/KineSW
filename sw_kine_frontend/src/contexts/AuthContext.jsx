@@ -49,8 +49,13 @@ export const AuthProvider = ({ children }) => {
 
   // Función de login
   const login = (accessToken, refreshToken, userData) => {
-    saveAuthData(accessToken, refreshToken, userData);
-    navigate('/dashboard');
+    try {
+      saveAuthData(accessToken, refreshToken, userData);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('AuthContext - Error en login:', error);
+      throw error;
+    }
   };
 
   // Función de logout
@@ -83,6 +88,42 @@ export const AuthProvider = ({ children }) => {
     return user;
   };
 
+  // Funciones auxiliares para verificar roles
+  const hasRole = (role) => {
+    return user?.role === role;
+  };
+
+  const isAdmin = () => {
+    return hasRole('Administrador');
+  };
+
+  const isMedico = () => {
+    return hasRole('Cuerpo médico');
+  };
+
+  const isTecnico = () => {
+    return hasRole('Cuerpo técnico');
+  };
+
+  const isDirigencia = () => {
+    return hasRole('Dirigencia');
+  };
+
+  // Verificar si el usuario puede escribir (crear/editar)
+  const canWrite = () => {
+    return isAdmin() || isMedico();
+  };
+
+  // Verificar si el usuario puede solo leer
+  const canOnlyRead = () => {
+    return isTecnico() || isDirigencia();
+  };
+
+  // Verificar si el usuario puede gestionar otros usuarios
+  const canManageUsers = () => {
+    return isAdmin();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -96,6 +137,15 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         getToken,
         getUser,
+        // Funciones de roles
+        hasRole,
+        isAdmin,
+        isMedico,
+        isTecnico,
+        isDirigencia,
+        canWrite,
+        canOnlyRead,
+        canManageUsers,
       }}
     >
       {!loading && children}

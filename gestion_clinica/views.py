@@ -2,22 +2,24 @@ from django.shortcuts import render
 from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate, login
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
+from django.contrib.auth.models import Group
 from .models import (
     Division, Jugador, AtencionKinesica, 
     Lesion, ArchivoMedico, ChecklistPostPartido, Partido,
-    EstadoDiarioLesion
+    EstadoDiarioLesion, UserProfile
 )
 from .serializers import (
     DivisionSerializer, JugadorSerializer, 
     AtencionKinesicaSerializer, LesionSerializer,
     ArchivoMedicoSerializer, ChecklistPostPartidoSerializer, PartidoSerializer,
     UserRegistrationSerializer, UserLoginSerializer, UserBasicSerializer,
-    UserSerializer, EstadoDiarioLesionSerializer, LesionActivaSerializer
+    UserSerializer, EstadoDiarioLesionSerializer, LesionActivaSerializer,
+    UserDetailSerializer, UserRegistrationByAdminSerializer
 )
 import re
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -25,6 +27,105 @@ from django.contrib.auth import get_user_model
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 User = get_user_model()
+
+# Clase de permisos personalizada
+class IsAdminOrReadOnly(permissions.BasePermission):
+    """
+    Permiso personalizado para permitir solo lectura a no-administradores
+    y escritura completa a administradores
+    """
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return request.user.is_authenticated
+        return request.user.is_authenticated and (
+            request.user.is_superuser or 
+            request.user.groups.filter(name='Administrador').exists()
+        )
+
+class IsMedicoOrAdmin(permissions.BasePermission):
+    """
+    Permiso para operaciones que requieren ser médico o administrador
+    """
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        return (request.user.is_superuser or 
+                request.user.groups.filter(name__in=['Administrador', 'Cuerpo médico']).exists())
+
+# Vista para gestión de usuarios (solo administradores)
+class UserManagementViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para gestión de usuarios - Solo administradores
+    """
+    queryset = User.objects.all().select_related('profile').prefetch_related('groups')
+    serializer_class = UserDetailSerializer
+    permission_classes = [IsAdminUser]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['username', 'first_name', 'last_name', 'email', 'profile__rut']
+    ordering_fields = ['last_name', 'first_name', 'date_joined']
+    ordering = ['last_name', 'first_name']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserRegistrationByAdminSerializer
+        return UserDetailSerializer
+
+    @action(detail=False, methods=['get'])
+    def roles(self, request):
+        """Endpoint para obtener los roles disponibles"""
+        roles = Group.objects.exclude(name='Administrador').values_list('name', flat=True)
+        return Response(list(roles))
+
+    @action(detail=True, methods=['post'])
+    def change_role(self, request, pk=None):
+        """Cambiar el rol de un usuario"""
+        user = self.get_object()
+        new_role = request.data.get('role')
+        
+        if not new_role:
+            return Response({'error': 'Rol requerido'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Remover grupos actuales (excepto Administrador si es superuser)
+            if not user.is_superuser:
+                user.groups.clear()
+            else:
+                user.groups.exclude(name='Administrador').delete()
+            
+            # Asignar nuevo grupo
+            group = Group.objects.get(name=new_role)
+            user.groups.add(group)
+            
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
+            
+        except Group.DoesNotExist:
+            return Response({'error': 'Rol no válido'}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def toggle_active(self, request, pk=None):
+        """Activar/desactivar usuario"""
+        user = self.get_object()
+        
+        # No permitir desactivar superusuarios
+        if user.is_superuser:
+            return Response({'error': 'No se puede desactivar un superusuario'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        user.is_active = not user.is_active
+        user.save()
+        
+        # También actualizar el perfil
+        if hasattr(user, 'profile'):
+            user.profile.activo = user.is_active
+            user.profile.save()
+        
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
 
 # Create your views here.
 
@@ -105,7 +206,7 @@ class DivisionViewSet(viewsets.ModelViewSet):
     """
     queryset = Division.objects.all().order_by('nombre')
     serializer_class = DivisionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['nombre']
     ordering_fields = ['nombre']
@@ -119,7 +220,7 @@ class JugadorViewSet(viewsets.ModelViewSet):
         'atenciones_kinesicas', 'lesiones', 'archivos_medicos', 'checklists_post_partido'
     ).order_by('apellidos', 'nombres')
     serializer_class = JugadorSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsMedicoOrAdmin]
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['division', 'activo', 'nacionalidad', 'lateralidad', 'prevision_salud']
@@ -195,7 +296,7 @@ class AtencionKinesicaViewSet(viewsets.ModelViewSet):
     """
     queryset = AtencionKinesica.objects.all().select_related('jugador', 'profesional_a_cargo').order_by('-fecha_atencion')
     serializer_class = AtencionKinesicaSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsMedicoOrAdmin]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['jugador', 'profesional_a_cargo', 'estado_actual']
     search_fields = ['motivo_consulta', 'prestaciones_realizadas', 'jugador__nombres', 'jugador__apellidos']
@@ -222,7 +323,7 @@ class LesionViewSet(viewsets.ModelViewSet):
     """
     queryset = Lesion.objects.all().select_related('jugador').order_by('-fecha_lesion')
     serializer_class = LesionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsMedicoOrAdmin]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = [
         'jugador', 'tipo_lesion', 'region_cuerpo', 'mecanismo_lesional', 
@@ -286,7 +387,7 @@ class ArchivoMedicoViewSet(viewsets.ModelViewSet):
     """
     queryset = ArchivoMedico.objects.all().select_related('jugador').order_by('-fecha_documento')
     serializer_class = ArchivoMedicoSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsMedicoOrAdmin]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['jugador', 'tipo_archivo']
     search_fields = ['titulo_descripcion', 'observaciones', 'jugador__nombres', 'jugador__apellidos']
@@ -321,7 +422,7 @@ class PartidoViewSet(viewsets.ModelViewSet):
     """
     queryset = Partido.objects.all().prefetch_related('convocados').order_by('-fecha')
     serializer_class = PartidoSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsMedicoOrAdmin]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['condicion', 'fecha']
     search_fields = ['rival']
@@ -416,7 +517,7 @@ class ChecklistPostPartidoViewSet(viewsets.ModelViewSet):
     """
     queryset = ChecklistPostPartido.objects.all().select_related('jugador', 'realizado_por', 'partido').order_by('-partido__fecha')
     serializer_class = ChecklistPostPartidoSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsMedicoOrAdmin]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = [
         'jugador', 'partido', 'realizado_por', 'dolor_molestia', 'intensidad_dolor',
@@ -481,7 +582,7 @@ class EstadoDiarioLesionViewSet(viewsets.ModelViewSet):
     """
     queryset = EstadoDiarioLesion.objects.all().select_related('lesion', 'registrado_por').order_by('-fecha')
     serializer_class = EstadoDiarioLesionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsMedicoOrAdmin]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['lesion', 'fecha', 'estado']
     search_fields = ['lesion__diagnostico_medico', 'lesion__jugador__nombres', 'lesion__jugador__apellidos', 'observaciones']
@@ -549,38 +650,42 @@ def register_view(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    """
-    Vista para iniciar sesión y devolver tokens JWT
-    """
-    try:
-        rut = request.data.get('rut')
-        password = request.data.get('password')
-
-        if not rut or not password:
-            return Response({
-                'error': 'Por favor, proporciona RUT y contraseña'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Limpiar el RUT
-        rut_limpio = re.sub(r'[^0-9kK]', '', rut)
+    serializer = UserLoginSerializer(data=request.data)
+    if serializer.is_valid():
+        rut = serializer.validated_data['rut']
+        password = serializer.validated_data['password']
         
-        # Intentar autenticar usando el RUT limpio como username
-        user = authenticate(username=rut_limpio, password=password)
-
-        if user is None:
+        user = authenticate(request, username=rut, password=password)
+        if user:
+            if user.is_active:
+                refresh = RefreshToken.for_user(user)
+                
+                # Obtener el rol del usuario
+                role = None
+                if user.groups.exists():
+                    role = user.groups.first().name
+                
+                return Response({
+                    'refresh': str(refresh),
+                    'access_token': str(refresh.access_token),
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'role': role,
+                        'is_staff': user.is_staff,
+                        'is_superuser': user.is_superuser
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'error': 'La cuenta está desactivada'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+        else:
             return Response({
-                'error': 'Credenciales inválidas'
+                'error': 'Credenciales incorrectas'
             }, status=status.HTTP_401_UNAUTHORIZED)
-
-        refresh = RefreshToken.for_user(user)
-        
-        return Response({
-            'access_token': str(refresh.access_token),
-            'refresh_token': str(refresh),
-            'user': UserSerializer(user).data
-        })
-    except Exception as e:
-        return Response({
-            'error': 'Error interno del servidor',
-            'detail': str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -18,14 +18,15 @@ import HistorialChecklistsPage from './pages/HistorialChecklistsPage';
 import PartidosListPage from './pages/PartidosListPage';
 import GestionarConvocatoriaPage from './pages/GestionarConvocatoriaPage';
 import RealizarChecklistPage from './pages/RealizarChecklistPage';
+import GestionUsuariosPage from './pages/GestionUsuariosPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const Router = () => {
   return (
     <Routes>
       {/* Rutas públicas */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+              <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
       {/* Rutas protegidas */}
       <Route path="/" element={<Layout />}>
@@ -47,7 +48,7 @@ const Router = () => {
             </ProtectedRoute>
           } />
           <Route path="jugador/nuevo" element={
-            <ProtectedRoute>
+            <ProtectedRoute requireWrite={true}>
               <AddPlayerPage />
             </ProtectedRoute>
           } />
@@ -57,6 +58,12 @@ const Router = () => {
             </ProtectedRoute>
           } />
         </Route>
+        {/* Ruta para Gestión de Usuarios - Solo Administradores */}
+        <Route path="gestion-usuarios" element={
+          <ProtectedRoute requireAdmin={true}>
+            <GestionUsuariosPage />
+          </ProtectedRoute>
+        } />
         {/* Nueva ruta para Atenciones Kinésicas */}
         <Route path="atenciones-kinesicas" element={
           <ProtectedRoute>
@@ -71,12 +78,12 @@ const Router = () => {
             </ProtectedRoute>
           } />
           <Route path=":partidoId/convocatoria" element={
-            <ProtectedRoute>
+            <ProtectedRoute requireWrite={true}>
               <GestionarConvocatoriaPage />
             </ProtectedRoute>
           } />
           <Route path=":partidoId/checklist" element={
-            <ProtectedRoute>
+            <ProtectedRoute requireWrite={true}>
               <RealizarChecklistPage />
             </ProtectedRoute>
           } />
@@ -84,14 +91,14 @@ const Router = () => {
         {/* Nueva ruta para Checklist Post-Partido (mantener para compatibilidad) */}
         <Route path="checklist-post-partido">
           <Route path="nuevo" element={
-            <ProtectedRoute>
+            <ProtectedRoute requireWrite={true}>
               <AddChecklistPage />
             </ProtectedRoute>
           } />
         </Route>
         {/* Nueva ruta para Estado de Lesión */}
         <Route path="estado-lesion" element={
-          <ProtectedRoute>
+          <ProtectedRoute requireWrite={true}>
             <EstadoLesionPage />
           </ProtectedRoute>
         } />
@@ -103,7 +110,7 @@ const Router = () => {
         } />
         {/* Nueva ruta para Registrar Nueva Lesión */}
         <Route path="lesiones/nueva" element={
-          <ProtectedRoute>
+          <ProtectedRoute requireWrite={true}>
             <NuevaLesionPage />
           </ProtectedRoute>
         } />

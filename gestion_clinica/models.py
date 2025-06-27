@@ -7,6 +7,8 @@ import re
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 # Validador personalizado para RUT chileno
 def validar_rut_chileno(value):
@@ -416,3 +418,45 @@ class ChecklistPostPartido(models.Model):
         verbose_name_plural = "Checklists Post-Partido"
         ordering = ['-partido__fecha', '-fecha_registro_checklist']
         unique_together = ('jugador', 'partido')  # Un jugador solo puede tener un checklist por partido
+
+class UserProfile(models.Model):
+    """
+    Perfil extendido del usuario para almacenar información adicional
+    como RUT y otros datos específicos del sistema
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    rut = models.CharField(
+        max_length=12, 
+        unique=True, 
+        help_text="RUT del usuario en formato XX.XXX.XXX-Y",
+        validators=[validar_rut_chileno]
+    )
+    telefono = models.CharField(max_length=15, blank=True, null=True)
+    cargo = models.CharField(max_length=100, blank=True, null=True, help_text="Cargo o función en el club")
+    activo = models.BooleanField(default=True, help_text="Usuario activo en el sistema")
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_modificacion = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.get_full_name() or self.user.username} ({self.rut})"
+
+    class Meta:
+        verbose_name = "Perfil de Usuario"
+        verbose_name_plural = "Perfiles de Usuario"
+        ordering = ['user__last_name', 'user__first_name']
+
+@receiver(post_save, sender=User)
+def crear_perfil_usuario(sender, instance, created, **kwargs):
+    """
+    Signal para crear automáticamente un UserProfile cuando se crea un User
+    """
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def guardar_perfil_usuario(sender, instance, **kwargs):
+    """
+    Signal para guardar el UserProfile cuando se guarda el User
+    """
+    if hasattr(instance, 'profile'):
+        instance.profile.save()

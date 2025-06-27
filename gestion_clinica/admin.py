@@ -1,8 +1,62 @@
 from django.contrib import admin
 from django.forms import ModelForm, RadioSelect
 from django.utils.html import format_html
-from .models import Division, Jugador, AtencionKinesica, Lesion, ArchivoMedico, ChecklistPostPartido, Partido, EstadoDiarioLesion
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin
+from .models import Division, Jugador, AtencionKinesica, Lesion, ArchivoMedico, ChecklistPostPartido, Partido, EstadoDiarioLesion, UserProfile
 from django import forms
+
+# Inline para mostrar el perfil del usuario en el admin de User
+class UserProfileInline(admin.StackedInline):
+    model = UserProfile
+    can_delete = False
+    verbose_name_plural = 'Perfil de Usuario'
+    fields = ['rut', 'telefono', 'cargo', 'activo']
+
+# Extender el UserAdmin para incluir el perfil
+class CustomUserAdmin(UserAdmin):
+    inlines = (UserProfileInline,)
+    list_display = ('username', 'email', 'first_name', 'last_name', 'get_rut', 'get_role', 'is_active', 'is_staff')
+    list_filter = ('is_active', 'is_staff', 'is_superuser', 'groups')
+    
+    def get_rut(self, obj):
+        return obj.profile.rut if hasattr(obj, 'profile') else '-'
+    get_rut.short_description = 'RUT'
+    
+    def get_role(self, obj):
+        groups = obj.groups.all()
+        if groups:
+            return ', '.join([group.name for group in groups])
+        return '-'
+    get_role.short_description = 'Rol'
+
+# Registrar el UserProfile independientemente
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'rut', 'cargo', 'activo', 'fecha_creacion')
+    list_filter = ('activo', 'fecha_creacion')
+    search_fields = ('user__username', 'user__first_name', 'user__last_name', 'rut', 'cargo')
+    readonly_fields = ('fecha_creacion', 'fecha_modificacion')
+    
+    fieldsets = (
+        ('Usuario', {
+            'fields': ('user',)
+        }),
+        ('Información Personal', {
+            'fields': ('rut', 'telefono', 'cargo')
+        }),
+        ('Estado', {
+            'fields': ('activo',)
+        }),
+        ('Fechas', {
+            'fields': ('fecha_creacion', 'fecha_modificacion'),
+            'classes': ('collapse',)
+        }),
+    )
+
+# Desregistrar el UserAdmin por defecto y registrar el personalizado
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)
 
 @admin.register(Division)
 class DivisionAdmin(admin.ModelAdmin):

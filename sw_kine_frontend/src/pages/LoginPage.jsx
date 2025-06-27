@@ -74,6 +74,8 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    
     setLoading(true);
     setError(null);
 
@@ -85,9 +87,14 @@ const LoginPage = () => {
     }
     
     try {
-      // Limpiar el RUT antes de enviarlo
-      const rutLimpio = rut.replace(/[^0-9kK]/g, '');
-      const response = await login({ rut: rutLimpio, password });
+      // El RUT ya viene formateado, lo enviamos tal como está
+      // porque el backend espera el username con formato "19976194-3"
+      const response = await login({ rut: rut, password });
+      
+      // Verificar que la respuesta tenga los datos necesarios
+      if (!response.access_token || !response.user) {
+        throw new Error('Respuesta del servidor incompleta');
+      }
       
       // Usar el contexto de autenticación para manejar el login
       authLogin(
@@ -98,8 +105,25 @@ const LoginPage = () => {
       
       // La navegación ahora la maneja el contexto
     } catch (err) {
-      console.error('Error en el login:', err);
-      setError(err.message || 'Credenciales incorrectas. Por favor, verifica tu RUT y contraseña.');
+      console.error('Error completo en el login:', err);
+      
+      // Manejar diferentes tipos de errores
+      let errorMessage = 'Error desconocido';
+      
+      if (err.response) {
+        // Error de respuesta del servidor
+        console.error('Error de respuesta:', err.response.data);
+        errorMessage = err.response.data?.error || err.response.data?.detail || 'Error del servidor';
+      } else if (err.request) {
+        // Error de red
+        console.error('Error de red:', err.request);
+        errorMessage = 'No se pudo conectar con el servidor. Verifica tu conexión.';
+      } else if (err.message) {
+        // Error de JavaScript
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

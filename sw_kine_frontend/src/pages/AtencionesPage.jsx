@@ -5,6 +5,7 @@ import AddAtencionModal from '../components/AddAtencionModal';
 import AtencionDetailModal from '../components/modals/AtencionDetailModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { formatDate } from '../utils/dateUtils';
+import { useAuth } from '../contexts/AuthContext';
 
 const AtencionesPage = () => {
   // Estados para la lista de jugadores y búsqueda
@@ -19,6 +20,9 @@ const AtencionesPage = () => {
   const [showAddAtencionModal, setShowAddAtencionModal] = useState(false);
   const [selectedAtencionDetail, setSelectedAtencionDetail] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Contexto de autenticación
+  const { canWrite } = useAuth();
   
   // Función para obtener fecha/hora actual en formato datetime-local
   const getCurrentDateTime = () => {
@@ -187,6 +191,20 @@ const AtencionesPage = () => {
             <p className="mt-1 text-sm text-gray-500">
               Gestione las atenciones kinésicas de los jugadores
             </p>
+            
+            {/* Mensaje informativo para usuarios de solo lectura */}
+            {!canWrite() && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-blue-800 text-sm">
+                    Solo puedes visualizar las atenciones kinésicas. No tienes permisos para registrar nuevas atenciones.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
@@ -262,8 +280,14 @@ const AtencionesPage = () => {
                       <p className="text-sm text-gray-500">{selectedJugador.rut}</p>
                     </div>
                     <button
-                      onClick={() => setShowAddAtencionModal(true)}
-                      className="inline-flex items-center px-4 py-2 bg-wanderers text-white rounded-md hover:bg-wanderers/90 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-wanderers"
+                      onClick={canWrite() ? () => setShowAddAtencionModal(true) : undefined}
+                      disabled={!canWrite()}
+                      className={`inline-flex items-center px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                        canWrite()
+                          ? 'bg-wanderers text-white hover:bg-wanderers/90 focus:ring-wanderers'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed focus:ring-gray-300'
+                      }`}
+                      title={!canWrite() ? 'No tienes permisos para registrar nuevas atenciones' : 'Nueva Atención'}
                     >
                       <svg
                         className="w-5 h-5 mr-2"

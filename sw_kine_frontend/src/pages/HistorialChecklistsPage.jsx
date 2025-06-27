@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getHistorialChecklists } from '../services/api';
 import ChecklistDetailModal from '../components/modals/ChecklistDetailModal';
+import { useAuth } from '../contexts/AuthContext';
 
 const HistorialChecklistsPage = () => {
   const [checklists, setChecklists] = useState([]);
@@ -13,6 +14,7 @@ const HistorialChecklistsPage = () => {
   const [divisionFilter, setDivisionFilter] = useState('');
   const [error, setError] = useState(null);
   const [selectedChecklist, setSelectedChecklist] = useState(null);
+  const { canWrite } = useAuth();
 
   // Función para extraer solo el nombre sin el RUT
   const extractNombreSinRut = (nombreCompleto) => {
@@ -179,6 +181,20 @@ const HistorialChecklistsPage = () => {
               <p className="text-gray-600 mt-2">
                 Registro completo de evaluaciones por partido jugado
               </p>
+              
+              {/* Mensaje informativo para usuarios de solo lectura */}
+              {!canWrite() && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-blue-800 text-sm">
+                      Solo puedes visualizar el historial de checklists. No tienes permisos para crear nuevos checklists.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-3">
               <button
@@ -192,15 +208,28 @@ const HistorialChecklistsPage = () => {
                 </svg>
                 <span>Actualizar</span>
               </button>
-              <Link
-                to="/checklist-post-partido/nuevo"
-                className="bg-wanderers-green text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center space-x-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <span>Nuevo Checklist</span>
-              </Link>
+              {canWrite() ? (
+                <Link
+                  to="/checklist-post-partido/nuevo"
+                  className="bg-wanderers-green text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>Nuevo Checklist</span>
+                </Link>
+              ) : (
+                <button
+                  disabled
+                  className="bg-gray-300 text-gray-500 px-6 py-3 rounded-lg cursor-not-allowed flex items-center space-x-2"
+                  title="No tienes permisos para crear nuevos checklists"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>Nuevo Checklist</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
