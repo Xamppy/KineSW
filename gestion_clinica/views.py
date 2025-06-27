@@ -44,6 +44,8 @@ class InformeLesionesView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         try:
+            from django.db.models import Q
+            
             # Consultar nuevas lesiones en el rango de fechas
             nuevas_lesiones = Lesion.objects.filter(
                 fecha_lesion__range=[start_date, end_date]
@@ -54,6 +56,12 @@ class InformeLesionesView(APIView):
                 fecha_fin__range=[start_date, end_date]
             ).select_related('jugador').order_by('fecha_fin')
             
+            # Consultar lesiones activas (que no tienen fecha_fin o fecha_fin es posterior al período)
+            lesiones_activas = Lesion.objects.filter(
+                Q(fecha_fin__isnull=True) | Q(fecha_fin__gt=end_date),
+                fecha_lesion__lte=end_date
+            ).select_related('jugador').order_by('fecha_lesion')
+            
             # Consultar cambios de estado diarios en el rango de fechas
             cambios_diarios = EstadoDiarioLesion.objects.filter(
                 fecha__range=[start_date, end_date]
@@ -62,6 +70,7 @@ class InformeLesionesView(APIView):
             # Serializar los datos
             nuevas_lesiones_data = LesionSerializer(nuevas_lesiones, many=True, context={'request': request}).data
             lesiones_finalizadas_data = LesionSerializer(lesiones_finalizadas, many=True, context={'request': request}).data
+            lesiones_activas_data = LesionSerializer(lesiones_activas, many=True, context={'request': request}).data
             cambios_diarios_data = EstadoDiarioLesionSerializer(cambios_diarios, many=True, context={'request': request}).data
             
             # Preparar respuesta estructurada
@@ -72,10 +81,12 @@ class InformeLesionesView(APIView):
                 },
                 'nuevas_lesiones': nuevas_lesiones_data,
                 'lesiones_finalizadas': lesiones_finalizadas_data,
+                'lesiones_activas': lesiones_activas_data,
                 'cambios_diarios': cambios_diarios_data,
                 'resumen': {
                     'total_nuevas_lesiones': len(nuevas_lesiones_data),
                     'total_lesiones_finalizadas': len(lesiones_finalizadas_data),
+                    'total_lesiones_activas': len(lesiones_activas_data),
                     'total_cambios_diarios': len(cambios_diarios_data)
                 }
             }

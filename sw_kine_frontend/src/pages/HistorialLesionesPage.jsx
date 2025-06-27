@@ -24,7 +24,12 @@ const HistorialLesionesPage = () => {
   // Estados para el modal de informes
   const [showInformeModal, setShowInformeModal] = useState(false);
   const [tipoInforme, setTipoInforme] = useState('diario');
-  const [fechaReferencia, setFechaReferencia] = useState(new Date().toISOString().split('T')[0]);
+  const [fechaReferencia, setFechaReferencia] = useState(() => {
+    // Obtener fecha actual en horario de Chile
+    const now = new Date();
+    // Usar toLocaleDateString para obtener la fecha en formato YYYY-MM-DD
+    return now.toLocaleDateString('en-CA', {timeZone: 'America/Santiago'});
+  });
   const [loadingInforme, setLoadingInforme] = useState(false);
   const [datosParaInforme, setDatosParaInforme] = useState(null);
 
@@ -168,12 +173,17 @@ const HistorialLesionesPage = () => {
 
   // Función para formatear fecha
   const formatearFecha = (fecha) => {
-    if (!fecha) return '';
-    return new Date(fecha).toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+    if (!fecha) return null;
+    try {
+      return new Date(fecha).toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (error) {
+      console.warn('Error al formatear fecha:', fecha, error);
+      return null;
+    }
   };
 
   // Función para obtener icono de tipo de lesión
@@ -314,6 +324,14 @@ const HistorialLesionesPage = () => {
     }
   };
 
+  // Función auxiliar para validar texto antes de pasarlo a pdf.text()
+  const validarTexto = (texto) => {
+    if (texto === null || texto === undefined || texto === '') {
+      return 'N/A';
+    }
+    return String(texto);
+  };
+
   // useEffect para generar PDF cuando cambien los datos del informe
   useEffect(() => {
     const generarPDF = async () => {
@@ -419,8 +437,10 @@ const HistorialLesionesPage = () => {
         
         pdf.setFontSize(16);
         pdf.setTextColor(5, 150, 105);
-        const periodo = `${formatearFecha(datosParaInforme.periodo.inicio)} al ${formatearFecha(datosParaInforme.periodo.fin)}`;
-        pdf.text(periodo, margin, currentY);
+        const fechaInicio = formatearFecha(datosParaInforme.periodo?.inicio) || 'Fecha no disponible';
+        const fechaFin = formatearFecha(datosParaInforme.periodo?.fin) || 'Fecha no disponible';
+        const periodo = `${fechaInicio} al ${fechaFin}`;
+        pdf.text(validarTexto(periodo), margin, currentY);
         currentY += 15;
         
         // RESUMEN EJECUTIVO CON DISEÑO PROFESIONAL
@@ -438,26 +458,32 @@ const HistorialLesionesPage = () => {
         const resumen = [
           { 
             label: 'Lesiones Activas', 
-            value: datosParaInforme.resumen.total_nuevas_lesiones, 
+            value: datosParaInforme.resumen.total_lesiones_activas || 0, 
             color: [220, 38, 38], // Rojo para activas
             icon: '⚠️'
           },
           { 
+            label: 'Nuevas Lesiones', 
+            value: datosParaInforme.resumen.total_nuevas_lesiones || 0, 
+            color: [245, 101, 101], // Rojo claro para nuevas
+            icon: '🆕'
+          },
+          { 
             label: 'Lesiones Finalizadas', 
-            value: datosParaInforme.resumen.total_lesiones_finalizadas, 
+            value: datosParaInforme.resumen.total_lesiones_finalizadas || 0, 
             color: [34, 197, 94], // Verde para finalizadas
             icon: '✅'
           },
           { 
             label: 'Seguimientos', 
-            value: datosParaInforme.resumen.total_cambios_diarios, 
+            value: datosParaInforme.resumen.total_cambios_diarios || 0, 
             color: [59, 130, 246], // Azul para seguimientos
             icon: '📊'
           }
         ];
         
         // Tarjetas de resumen más elegantes
-        const cardWidth = (contentWidth - 20) / 3;
+        const cardWidth = (contentWidth - 25) / 4;
         let xPos = margin + 5;
         
         resumen.forEach((item, index) => {
@@ -488,7 +514,7 @@ const HistorialLesionesPage = () => {
         currentY += 50;
         
         // SECCIÓN LESIONES ACTIVAS
-        if (datosParaInforme.nuevas_lesiones && datosParaInforme.nuevas_lesiones.length > 0) {
+        if (datosParaInforme.lesiones_activas && datosParaInforme.lesiones_activas.length > 0) {
           checkPageSpace(50);
           
           // Encabezado de sección con icono y color
@@ -504,7 +530,7 @@ const HistorialLesionesPage = () => {
           
           pdf.setFontSize(9);
           pdf.setTextColor(127, 29, 29);
-          pdf.text(`Total: ${datosParaInforme.nuevas_lesiones.length} lesiones`, margin + contentWidth - 50, currentY + 8);
+          pdf.text(`Total: ${datosParaInforme.lesiones_activas.length} lesiones`, margin + contentWidth - 50, currentY + 8);
           
           currentY += 18;
           
@@ -519,7 +545,7 @@ const HistorialLesionesPage = () => {
           currentY += 12;
           
           // Filas de datos con formato de 2 líneas más grandes
-          datosParaInforme.nuevas_lesiones.forEach((lesion, index) => {
+          datosParaInforme.lesiones_activas.forEach((lesion, index) => {
             checkPageSpace(30);
             
             // Fondo alternado más alto
@@ -538,11 +564,11 @@ const HistorialLesionesPage = () => {
             
             // Nombre del jugador en negrita (línea 1)
             pdf.setFont('helvetica', 'bold');
-            pdf.text(lesion.jugador_nombre, margin + 6, currentY + 10);
+            pdf.text(validarTexto(lesion.jugador_nombre || 'Jugador no especificado'), margin + 6, currentY + 10);
             
             // Fecha (línea 1)
             pdf.setFont('helvetica', 'normal');
-            pdf.text(formatearFecha(lesion.fecha_lesion), margin + 6, currentY + 18);
+            pdf.text(validarTexto(formatearFecha(lesion.fecha_lesion) || 'Fecha no disponible'), margin + 6, currentY + 18);
             
             // SEGUNDA LÍNEA - Diagnóstico completo
             pdf.setFontSize(9);
@@ -554,11 +580,11 @@ const HistorialLesionesPage = () => {
             pdf.setFont('helvetica', 'normal');
             
             // Dividir diagnóstico en múltiples líneas si es muy largo
-            const diagnosticoCompleto = lesion.diagnostico_medico;
+            const diagnosticoCompleto = validarTexto(lesion.diagnostico_medico || 'No especificado');
             if (diagnosticoCompleto.length > 70) {
               const linea1 = diagnosticoCompleto.substring(0, 70);
               const linea2 = diagnosticoCompleto.substring(70, 140);
-              pdf.text(linea1, margin + 35, currentY + 26);
+              pdf.text(validarTexto(linea1), margin + 35, currentY + 26);
               if (linea2) {
                 // Aumentar altura si necesita segunda línea
                 checkPageSpace(8);
@@ -568,11 +594,11 @@ const HistorialLesionesPage = () => {
                 }
                 pdf.setFillColor(220, 38, 38);
                 pdf.rect(margin, currentY, 2, 38, 'F');
-                pdf.text(linea2, margin + 35, currentY + 33);
+                pdf.text(validarTexto(linea2), margin + 35, currentY + 33);
                 currentY += 8;
               }
             } else {
-              pdf.text(diagnosticoCompleto, margin + 35, currentY + 26);
+              pdf.text(validarTexto(diagnosticoCompleto), margin + 35, currentY + 26);
             }
             
             // Tipo y Región en la esquina derecha - alineados
@@ -582,14 +608,14 @@ const HistorialLesionesPage = () => {
             pdf.text('Tipo:', margin + contentWidth - 75, currentY + 10);
             pdf.setTextColor(51, 51, 51);
             pdf.setFont('helvetica', 'normal');
-            pdf.text(lesion.tipo_lesion_display, margin + contentWidth - 50, currentY + 10);
+            pdf.text(validarTexto(formatearTextoAmigable(lesion.tipo_lesion_display || lesion.tipo_lesion || 'N/A')), margin + contentWidth - 50, currentY + 10);
             
             pdf.setTextColor(75, 85, 99);
             pdf.setFont('helvetica', 'bold');
             pdf.text('Región:', margin + contentWidth - 75, currentY + 18);
             pdf.setTextColor(51, 51, 51);
             pdf.setFont('helvetica', 'normal');
-            pdf.text(lesion.region_cuerpo_display, margin + contentWidth - 50, currentY + 18);
+            pdf.text(validarTexto(formatearTextoAmigable(lesion.region_cuerpo_display || lesion.region_cuerpo || 'N/A')), margin + contentWidth - 50, currentY + 18);
             
             currentY += 35;
           });
@@ -606,6 +632,129 @@ const HistorialLesionesPage = () => {
           pdf.setFontSize(12);
           pdf.setTextColor(34, 197, 94);
           pdf.text('No hay lesiones activas en este período', margin + contentWidth/2, currentY + 12, { align: 'center' });
+          
+          currentY += 35;
+        }
+        
+        // SECCIÓN NUEVAS LESIONES
+        if (datosParaInforme.nuevas_lesiones && datosParaInforme.nuevas_lesiones.length > 0) {
+          checkPageSpace(50);
+          
+          // Encabezado de sección con icono y color
+          pdf.setFillColor(255, 247, 237); // Fondo naranja claro
+          pdf.rect(margin, currentY, contentWidth, 12, 'F');
+          pdf.setDrawColor(245, 101, 101);
+          pdf.setLineWidth(2);
+          pdf.line(margin, currentY, margin + contentWidth, currentY);
+          
+          pdf.setFontSize(14);
+          pdf.setTextColor(245, 101, 101);
+          pdf.text('NUEVAS LESIONES', margin + 5, currentY + 8);
+          
+          pdf.setFontSize(9);
+          pdf.setTextColor(154, 52, 18);
+          pdf.text(`Total: ${datosParaInforme.nuevas_lesiones.length} lesiones`, margin + contentWidth - 50, currentY + 8);
+          
+          currentY += 18;
+          
+          // Encabezado simplificado para formato de 2 líneas
+          pdf.setFillColor(245, 101, 101);
+          pdf.rect(margin, currentY, contentWidth, 12, 'F');
+          
+          pdf.setFontSize(10);
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text('JUGADOR | FECHA LESIÓN | DIAGNÓSTICO COMPLETO', margin + 4, currentY + 8);
+          currentY += 12;
+          
+          // Filas de datos con formato de 2 líneas más grandes
+          datosParaInforme.nuevas_lesiones.forEach((lesion, index) => {
+            checkPageSpace(30);
+            
+            // Fondo alternado más alto
+            if (index % 2 === 0) {
+              pdf.setFillColor(255, 247, 237);
+              pdf.rect(margin, currentY, contentWidth, 30, 'F');
+            }
+            
+            // Borde izquierdo naranja
+            pdf.setFillColor(245, 101, 101);
+            pdf.rect(margin, currentY, 2, 30, 'F');
+            
+            // PRIMERA LÍNEA
+            pdf.setFontSize(10);
+            pdf.setTextColor(51, 51, 51);
+            
+            // Nombre del jugador en negrita (línea 1)
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(validarTexto(lesion.jugador_nombre || 'Jugador no especificado'), margin + 6, currentY + 10);
+            
+            // Fecha (línea 1)
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(validarTexto('Lesión: ' + (formatearFecha(lesion.fecha_lesion) || 'Fecha no disponible')), margin + 6, currentY + 18);
+            
+            // SEGUNDA LÍNEA - Diagnóstico completo
+            pdf.setFontSize(9);
+            pdf.setTextColor(75, 85, 99);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Diagnóstico:', margin + 6, currentY + 26);
+            
+            pdf.setTextColor(51, 51, 51);
+            pdf.setFont('helvetica', 'normal');
+            
+            // Dividir diagnóstico en múltiples líneas si es muy largo
+            const diagnosticoCompleto = validarTexto(lesion.diagnostico_medico || 'No especificado');
+            if (diagnosticoCompleto.length > 70) {
+              const linea1 = diagnosticoCompleto.substring(0, 70);
+              const linea2 = diagnosticoCompleto.substring(70, 140);
+              pdf.text(validarTexto(linea1), margin + 35, currentY + 26);
+              if (linea2) {
+                // Aumentar altura si necesita segunda línea
+                checkPageSpace(8);
+                if (index % 2 === 0) {
+                  pdf.setFillColor(255, 247, 237);
+                  pdf.rect(margin, currentY, contentWidth, 38, 'F');
+                }
+                pdf.setFillColor(245, 101, 101);
+                pdf.rect(margin, currentY, 2, 38, 'F');
+                pdf.text(validarTexto(linea2), margin + 35, currentY + 33);
+                currentY += 8;
+              }
+            } else {
+              pdf.text(validarTexto(diagnosticoCompleto), margin + 35, currentY + 26);
+            }
+            
+            // Tipo y Región en la esquina derecha - alineados
+            pdf.setFontSize(9);
+            pdf.setTextColor(75, 85, 99);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Tipo:', margin + contentWidth - 75, currentY + 10);
+            pdf.setTextColor(51, 51, 51);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(validarTexto(formatearTextoAmigable(lesion.tipo_lesion_display || lesion.tipo_lesion || 'N/A')), margin + contentWidth - 50, currentY + 10);
+            
+            pdf.setTextColor(75, 85, 99);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Región:', margin + contentWidth - 75, currentY + 18);
+            pdf.setTextColor(51, 51, 51);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(validarTexto(formatearTextoAmigable(lesion.region_cuerpo_display || lesion.region_cuerpo || 'N/A')), margin + contentWidth - 50, currentY + 18);
+            
+            currentY += 35;
+          });
+          
+          currentY += 15;
+        } else {
+          // Mensaje cuando no hay nuevas lesiones
+          checkPageSpace(30);
+          pdf.setFillColor(249, 250, 251);
+          pdf.rect(margin, currentY, contentWidth, 20, 'F');
+          pdf.setDrawColor(156, 163, 175);
+          pdf.rect(margin, currentY, contentWidth, 20, 'S');
+          
+          pdf.setFontSize(12);
+          pdf.setTextColor(107, 114, 128);
+          pdf.text('No hay nuevas lesiones en este período', margin + contentWidth/2, currentY + 12, { align: 'center' });
           
           currentY += 35;
         }
@@ -670,11 +819,11 @@ const HistorialLesionesPage = () => {
             
             // Nombre del jugador en negrita (línea 1)
             pdf.setFont('helvetica', 'bold');
-            pdf.text(lesion.jugador_nombre, margin + 6, currentY + 10);
+            pdf.text(lesion.jugador_nombre || 'Jugador no especificado', margin + 6, currentY + 10);
             
             // Fecha de alta (línea 1)
             pdf.setFont('helvetica', 'normal');
-            pdf.text('Alta: ' + formatearFecha(lesion.fecha_fin), margin + 6, currentY + 18);
+            pdf.text('Alta: ' + (formatearFecha(lesion.fecha_fin) || 'Fecha no disponible'), margin + 6, currentY + 18);
             
             // SEGUNDA LÍNEA - Diagnóstico completo
             pdf.setFontSize(9);
@@ -686,7 +835,7 @@ const HistorialLesionesPage = () => {
             pdf.setFont('helvetica', 'normal');
             
             // Dividir diagnóstico en múltiples líneas si es muy largo
-            const diagnosticoCompleto = lesion.diagnostico_medico;
+            const diagnosticoCompleto = lesion.diagnostico_medico || 'No especificado';
             if (diagnosticoCompleto.length > 70) {
               const linea1 = diagnosticoCompleto.substring(0, 70);
               const linea2 = diagnosticoCompleto.substring(70, 140);
@@ -714,14 +863,14 @@ const HistorialLesionesPage = () => {
             pdf.text('Tipo:', margin + contentWidth - 75, currentY + 10);
             pdf.setTextColor(51, 51, 51);
             pdf.setFont('helvetica', 'normal');
-            pdf.text(lesion.tipo_lesion_display, margin + contentWidth - 50, currentY + 10);
+            pdf.text(validarTexto(formatearTextoAmigable(lesion.tipo_lesion_display || lesion.tipo_lesion || 'N/A')), margin + contentWidth - 50, currentY + 10);
             
             pdf.setTextColor(75, 85, 99);
             pdf.setFont('helvetica', 'bold');
             pdf.text('Duración:', margin + contentWidth - 75, currentY + 18);
             pdf.setTextColor(51, 51, 51);
             pdf.setFont('helvetica', 'normal');
-            pdf.text(duracion, margin + contentWidth - 50, currentY + 18);
+            pdf.text(validarTexto(duracion || 'N/A'), margin + contentWidth - 50, currentY + 18);
             
             currentY += 35;
           });
@@ -763,10 +912,39 @@ const HistorialLesionesPage = () => {
           
           currentY += 18;
           
+          // Crear un mapa de lesiones por ID para obtener los nombres de jugadores
+          const lesionMap = {};
+          
+          // Mapear todas las lesiones disponibles (activas, nuevas y finalizadas)
+          if (datosParaInforme.lesiones_activas) {
+            datosParaInforme.lesiones_activas.forEach(lesion => {
+              lesionMap[lesion.id] = lesion.jugador_nombre || 'Jugador no especificado';
+            });
+          }
+          if (datosParaInforme.nuevas_lesiones) {
+            datosParaInforme.nuevas_lesiones.forEach(lesion => {
+              lesionMap[lesion.id] = lesion.jugador_nombre || 'Jugador no especificado';
+            });
+          }
+          if (datosParaInforme.lesiones_finalizadas) {
+            datosParaInforme.lesiones_finalizadas.forEach(lesion => {
+              lesionMap[lesion.id] = lesion.jugador_nombre || 'Jugador no especificado';
+            });
+          }
+          
+          console.log('Mapa de lesiones creado:', lesionMap);
+          
           // Agrupar cambios por jugador para mejor organización
           const cambiosPorJugador = {};
-          datosParaInforme.cambios_diarios.forEach(cambio => {
-            const nombreJugador = cambio.lesion?.jugador_nombre || cambio.jugador_nombre || 'Jugador desconocido';
+          datosParaInforme.cambios_diarios.forEach((cambio, index) => {
+            // Obtener el nombre del jugador usando el ID de la lesión
+            const lesionId = cambio.lesion;
+            const nombreJugador = lesionMap[lesionId] || 'Jugador desconocido';
+            
+            if (index === 0) {
+              console.log(`Primer cambio: lesion ID ${lesionId} -> jugador: ${nombreJugador}`);
+            }
+            
             if (!cambiosPorJugador[nombreJugador]) {
               cambiosPorJugador[nombreJugador] = [];
             }
@@ -795,24 +973,24 @@ const HistorialLesionesPage = () => {
             pdf.setFontSize(10);
             pdf.setTextColor(30, 41, 59);
             pdf.setFont('helvetica', 'bold');
-            pdf.text(jugador, margin + 8, currentY + 6);
+            pdf.text(validarTexto(jugador || 'Jugador desconocido'), margin + 8, currentY + 6);
             
             // Número de seguimientos
             pdf.setFontSize(8);
             pdf.setTextColor(100, 116, 139);
             pdf.setFont('helvetica', 'normal');
-            pdf.text(`${cambiosPorJugador[jugador].length} seguimientos`, margin + 8, currentY + 10);
+            pdf.text(validarTexto(`${cambiosPorJugador[jugador].length} seguimientos`), margin + 8, currentY + 10);
             
             // Último estado
             const ultimoCambio = cambiosPorJugador[jugador][cambiosPorJugador[jugador].length - 1];
             pdf.setFontSize(8);
             pdf.setTextColor(59, 130, 246);
-            pdf.text(`Último estado: ${ultimoCambio.estado_display || ultimoCambio.estado_actual || 'N/A'}`, margin + 8, currentY + 14);
+            pdf.text(validarTexto(`Último estado: ${ultimoCambio.estado_display || ultimoCambio.estado_actual || 'N/A'}`), margin + 8, currentY + 14);
             
             // Fecha del último seguimiento
             pdf.setFontSize(7);
             pdf.setTextColor(156, 163, 175);
-            pdf.text(`Última actualización: ${formatearFecha(ultimoCambio.fecha)}`, margin + contentWidth - 60, currentY + 6);
+            pdf.text(validarTexto(`Última actualización: ${formatearFecha(ultimoCambio.fecha) || 'Fecha no disponible'}`), margin + contentWidth - 60, currentY + 6);
             
             // Indicador de mejora
             if (ultimoCambio.mejora_notable) {
