@@ -233,7 +233,11 @@ const AtencionesPage = () => {
                         </p>
                         <div className={`text-sm ${selectedJugador?.id === jugador.id ? 'text-white/90' : 'text-gray-500'}`}>
                           <p>{jugador.rut}</p>
-                          <p>{jugador.division} - {jugador.posicion}</p>
+                          {(jugador.division_nombre || jugador.posicion) && (
+                            <p>
+                              {[jugador.division_nombre, jugador.posicion].filter(Boolean).join(' - ')}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </button>
