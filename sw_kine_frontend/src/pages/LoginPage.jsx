@@ -220,29 +220,7 @@ const LoginPage = () => {
               </div>
             </form>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">o continúa con</span>
-              </div>
-            </div>
 
-            <div>
-              <button
-                type="button"
-                className="w-full flex items-center justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#07421a]"
-              >
-                <svg className="h-5 w-5 me-2" viewBox="0 0 24 24">
-                  <path
-                    d="M12.545 10.239v3.821h5.445c-0.643 2.783-3.006 4.798-5.445 4.798-3.312 0-6-2.688-6-6s2.688-6 6-6c1.47 0 2.817 0.538 3.852 1.429l2.853-2.853c-1.782-1.662-4.156-2.676-6.705-2.676-5.523 0-10 4.477-10 10s4.477 10 10 10c8.396 0 10.586-7.807 9.746-13h-9.746z"
-                    fill="#4285F4"
-                  />
-                </svg>
-                Registrar con Google
-              </button>
-            </div>
 
             <div className="text-center text-sm">
               <span className="text-gray-500">¿No tienes una cuenta? </span>
